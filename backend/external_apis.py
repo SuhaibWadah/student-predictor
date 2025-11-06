@@ -45,7 +45,7 @@ class HuggingFaceAPI:
             result = self.client.predict(
                 *data_for_api, 
                 api_name=self.API_NAME,
-                request_options={"timeout": timeout}
+                #request_options={"timeout": timeout}
             )
             response_time = int((time.time() - start_time) * 1000)
 
