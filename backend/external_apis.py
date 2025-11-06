@@ -95,7 +95,7 @@ class OpenRouterAPI:
                 {'role': 'user', 'content': prompt}
             ],
             'temperature': 0.7,
-            'max_tokens': 2000 # 🌟 FIX 1: INCREASED FROM 500 TO 2000 (Prevents Truncation) 🌟
+            'max_tokens': 885 # 🌟 FIX 1: INCREASED FROM 500 TO 2000 (Prevents Truncation) 🌟
         }
 
         try:
@@ -143,23 +143,26 @@ class OpenRouterAPI:
         score_display = str(predicted_score)
         
         features_text = "\n".join([f"- {k}: {v}" for k, v in features.items()])
-        return f"""
+        returnf"""
 Generate a personalized improvement plan for the following student:
 
-Student: {student_name}
-Year: {year}
-Semester: {semester}
-Predicted Performance Score: {score_display}
+**Student:** {student_name}
+**Year:** {year}
+**Semester:** {semester}
+**Predicted Performance:** {score_display}
 
-Current Features:
+**Relevant Features:**
 {features_text}
 
-Please provide:
-1. Analysis of current performance
-2. Key areas for improvement
-3. Specific action items (3-5)
-4. Timeline for implementation
-5. Success metrics
+---
+**STRICT INSTRUCTIONS:**
+Provide the plan using **Markdown headings (##)** for each of the five requested sections below. Be extremely concise. The entire output must be less or close to than 880 tokens.
 
-Keep the plan concise and actionable.
+## 1. Analysis of Current Performance (Max 3 concise sentences)
+## 2. Key Areas for Improvement (List 2-3 bullet points)
+## 3. Specific Action Items (Provide 3-5 numbered, detailed steps)
+## 4. Timeline for Implementation (Suggest specific timeframes: e.g., 'Weeks 1-4')
+## 5. Success Metrics (List 2-3 measurable indicators)
+
+---
 """.strip()
