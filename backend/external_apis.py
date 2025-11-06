@@ -143,7 +143,7 @@ class OpenRouterAPI:
         score_display = str(predicted_score)
         
         features_text = "\n".join([f"- {k}: {v}" for k, v in features.items()])
-        returnf"""
+        return f"""
 Generate a personalized improvement plan for the following student:
 
 **Student:** {student_name}
