@@ -108,10 +108,16 @@ def before_request():
     #     init_db()
 
     if __name__ == "__main__":
+        PORT = int(os.getenv("PORT", 5000))
+
+    # Initialize DB ONCE upon startup
         with app.app_context():
             init_db()
+
+        logger.info(f"Starting Flask on port {PORT}...")
+
         app.run(
             host="0.0.0.0",
-            port=int(os.getenv("PORT", 5000)),
+            port=PORT,
             debug=os.getenv("FLASK_ENV") == "development"
         )
