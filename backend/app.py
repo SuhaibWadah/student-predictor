@@ -24,18 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask application
 app = Flask(__name__, static_folder="static", template_folder="templates")
-CORS(
-    app,
-    resources={r"/api/*": {"origins": [
-        "http://localhost:3000", 
-        "http://localhost:8080", 
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8080",
-        "http://localhost:5000", # Allow same-origin just in case
-        "*", # Fallback to all for simple GET requests
-    ]}},
-    supports_credentials=True
-)
+CORS(app)
 
 # Configuration
 app.config["JSON_SORT_KEYS"] = False
