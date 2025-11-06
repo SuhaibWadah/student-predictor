@@ -1,3 +1,4 @@
+"""
 API Routes for Student Performance Predictor
 Defines endpoints for single and batch student predictions.
 """
@@ -8,7 +9,7 @@ from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 import traceback
 
-from models import db, Student, PredictionLog # Ensure Student is imported here
+from models import db, Student, PredictionLog
 from utils import FileParser, DataValidator, DuplicateChecker, format_error_response, format_success_response
 from external_apis import HuggingFaceAPI, OpenRouterAPI
 from pdf_generator import ImprovementPlanPDFGenerator
@@ -29,7 +30,9 @@ ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
 
 # 🌟 CRITICAL MAPPING FOR HUGGING FACE API 🌟
-# ... (HF_INPUT_ORDER dictionary remains unchanged)
+# This dictionary maps the user-friendly keys (from your JSON/DB) to the 
+# POSITIONAL ORDER (param_0 to param_35) required by your Gradio Space model.
+# NOTE: YOU MUST verify this order against your actual Gradio Space inputs!
 HF_INPUT_ORDER = {
     0: 'marital_status',
     1: 'application_mode',
@@ -132,7 +135,7 @@ def predict_single():
             logger.warning(f"Plan generation failed for single prediction: {plan_error}")
             improvement_plan = "Improvement plan generation temporarily unavailable."
 
-        # 🌟 FIX 3: Store prediction in database 🌟
+        # 🌟 FIX 1: Store prediction in database (Added Missing Logic) 🌟
         student = Student(
             name=data.get('student_name', 'Single Prediction'),
             year=data.get('year', 1),
@@ -143,11 +146,12 @@ def predict_single():
         )
         db.session.add(student)
         db.session.commit() # Commit the transaction to save the record!
-
+        
+        # 🌟 FIX 2: Corrected response structure to include student_id for frontend 🌟
         response = {
             "predicted_performance": predicted_score,
             "improvement_plan": improvement_plan,
-            "student_id": student.id # Return ID for potential history linking
+            "student_id": student.id
         }
         return jsonify({"data": response}), 200
 
@@ -161,25 +165,263 @@ def predict_single():
 
 @api_bp.route('/predict-batch', methods=['POST'])
 def predict_batch():
-# ... (rest of the predict_batch function remains unchanged)
-# ...
+    """
+    Endpoint for batch student performance predictions.
+    """
+    try:
+        # Check if file is in request
+        if 'file' not in request.files:
+            return jsonify(format_error_response("No file provided")), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify(format_error_response("No file selected")), 400
+        
+        # Validate file size
+        file.seek(0, 2)  # Seek to end
+        file_size = file.tell()
+        file.seek(0)  # Reset to beginning
+        
+        if file_size > MAX_FILE_SIZE:
+            return jsonify(format_error_response(f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB")), 400
+        
+        # Parse file
+        records, parse_error = FileParser.parse_file(file)
+        
+        if parse_error:
+            return jsonify(format_error_response("File parsing failed", parse_error)), 400
+        
+        if not records:
+            return jsonify(format_error_response("No valid records found in file")), 400
+        
+        logger.info(f"Batch processing started. Total records: {len(records)}")
+        
+        # Create prediction log entry
+        pred_log = PredictionLog(
+            prediction_type='batch',
+            input_data={'total_records': len(records)},
+            status='pending'
+        )
+        db.session.add(pred_log)
+        db.session.commit()
+        
+        # Get existing records for duplicate checking
+        existing_students = db.session.query(Student).all()
+        existing_records = [{'name': s.name, 'year': s.year, 'semester': s.semester} for s in existing_students]
+        
+        # Filter duplicates
+        unique_records, duplicate_records = DuplicateChecker.filter_duplicates(records, existing_records)
+        
+        logger.info(f"Unique records: {len(unique_records)}, Duplicates: {len(duplicate_records)}")
+        
+        # Process predictions
+        predictions = []
+        errors = []
+        successful_count = 0
+        
+        for idx, record in enumerate(unique_records):
+            try:
+                # 1. Map and validate the input data order for HF
+                hf_features, validation_error = prepare_hf_features(record['features'])
+                if validation_error:
+                    raise ValueError(validation_error)
+                
+                # 2. Get prediction
+                predicted_score, hf_error = hf_api.predict(hf_features)
+                
+                if hf_error:
+                    errors.append({
+                        'record_index': idx,
+                        'name': record['name'],
+                        'error': f"Prediction failed: {hf_error}"
+                    })
+                    continue
+                
+                # 3. Generate improvement plan
+                improvement_plan, or_error = openrouter_api.generate_improvement_plan(
+                    record['name'],
+                    record['year'],
+                    record['semester'],
+                    record['features'],
+                    predicted_score
+                )
+                
+                if or_error:
+                    logger.warning(f"Plan generation failed for {record['name']}: {or_error}")
+                    improvement_plan = "Plan generation temporarily unavailable."
+                
+                # 4. Store in database
+                student = Student(
+                    name=record['name'],
+                    year=record['year'],
+                    semester=record['semester'],
+                    features=record['features'],
+                    predicted_performance=predicted_score,
+                    improvement_plan=improvement_plan
+                )
+                db.session.add(student)
+                db.session.flush()  # Get the ID without committing
+                
+                predictions.append({
+                    'student_id': student.id,
+                    'name': student.name,
+                    'year': student.year,
+                    'semester': student.semester,
+                    'predicted_performance': predicted_score,
+                    'improvement_plan': improvement_plan
+                })
+                
+                successful_count += 1
+                
+            except Exception as e:
+                logger.error(f"Error processing record {idx}: {str(e)}")
+                errors.append({
+                    'record_index': idx,
+                    'name': record.get('name', 'Unknown'),
+                    'error': str(e)
+                })
+        
+        # Commit all changes
+        db.session.commit()
+        
+        # Update prediction log
+        pred_log.predicted_value = successful_count
+        pred_log.status = 'success' if successful_count > 0 else 'failed'
+        db.session.commit()
+        
+        logger.info(f"Batch processing completed. Successful: {successful_count}, Failed: {len(errors)}")
+        
+        # Return response
+        response_data = {
+            'total_records': len(records),
+            'successful': successful_count,
+            'failed': len(errors),
+            'duplicates': len(duplicate_records),
+            'predictions': predictions,
+            'errors': errors,
+            'duplicate_names': [r['name'] for r in duplicate_records] if duplicate_records else []
+        }
+        
+        return jsonify(format_success_response(response_data, "Batch processing completed")), 200
+        
+    except Exception as e:
+        logger.error(f"Error in predict_batch: {str(e)}")
+        return jsonify(format_error_response("Internal server error", str(e))), 500
+
 
 @api_bp.route('/history', methods=['GET'])
 def get_history():
-# ... (rest of the get_history function remains unchanged)
-# ...
+    """
+    Endpoint to retrieve prediction history.
+    """
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        # Validate parameters
+        limit = min(limit, 100)  # Max 100 records per request
+        offset = max(offset, 0)
+        
+        # Query database
+        students = db.session.query(Student).order_by(Student.created_at.desc()).limit(limit).offset(offset).all()
+        total = db.session.query(Student).count()
+        
+        # Format response
+        data = [student.to_dict() for student in students]
+        
+        return jsonify({
+            'data': data,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_history: {str(e)}")
+        return jsonify(format_error_response("Internal server error", str(e))), 500
+
 
 @api_bp.route('/student/<int:student_id>', methods=['GET'])
 def get_student(student_id):
-# ... (rest of the get_student function remains unchanged)
-# ...
+    """
+    Endpoint to retrieve a specific student's prediction data.
+    """
+    try:
+        student = db.session.query(Student).filter_by(id=student_id).first()
+        
+        if not student:
+            return jsonify(format_error_response("Student not found")), 404
+        
+        return jsonify(format_success_response(student.to_dict())), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_student: {str(e)}")
+        return jsonify(format_error_response("Internal server error", str(e))), 500
+
 
 @api_bp.route('/student/<int:student_id>/pdf', methods=['GET'])
 def download_student_pdf(student_id):
-# ... (rest of the download_student_pdf function remains unchanged)
-# ...
+    """
+    Endpoint to download a student's improvement plan as PDF.
+    """
+    try:
+        student = db.session.query(Student).filter_by(id=student_id).first()
+        
+        if not student:
+            return jsonify(format_error_response("Student not found")), 404
+        
+        # Generate PDF
+        pdf_filename, error = pdf_generator.generate_improvement_plan_pdf(
+            student.name,
+            student.year,
+            student.semester,
+            student.predicted_performance,
+            student.improvement_plan,
+            student.features if isinstance(student.features, dict) else {}
+        )
+        
+        if error:
+            logger.error(f"PDF generation failed: {error}")
+            return jsonify(format_error_response("PDF generation failed", error)), 500
+        
+        # Return file path for download
+        return jsonify(format_success_response({
+            'filename': pdf_filename,
+            'download_url': f'/api/download/{pdf_filename}' # Use /api prefix as it's registered under it
+        }, "PDF generated successfully")), 200
+        
+    except Exception as e:
+        logger.error(f"Error in download_student_pdf: {str(e)}")
+        return jsonify(format_error_response("Internal server error", str(e))), 500
+
 
 @api_bp.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
-# ... (rest of the download_file function remains unchanged)
-# ...
+    """
+    Endpoint to download generated PDF files.
+    """
+    try:
+        from flask import send_file
+        import os
+        
+        # Security: Validate filename to prevent directory traversal
+        if '..' in filename or '/' in filename or '\\' in filename:
+            return jsonify(format_error_response("Invalid filename")), 400
+        
+        # CRITICAL: This path must be correct for Render/local FS
+        pdf_path = os.path.join(os.getcwd(), 'pdfs', filename) 
+        
+        if not os.path.exists(pdf_path):
+            return jsonify(format_error_response("File not found")), 404
+        
+        return send_file(
+            pdf_path,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in download_file: {str(e)}")
+        return jsonify(format_error_response("Internal server error", str(e))), 500
