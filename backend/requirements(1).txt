@@ -12,3 +12,4 @@ reportlab
 gunicorn
 gradio_client
 python-dotenv
+psycopg2-binary
