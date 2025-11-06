@@ -955,6 +955,12 @@ function formatMarkdown(markdownText) {
         fileUploadArea.addEventListener('click', function() {
             batchFile.click();
         });
+        batchFile.addEventListener('change', function(e) {
+    if (this.files && this.files.length > 0) {
+        fileUploadArea.classList.add('file-selected');
+        fileUploadArea.querySelector('p').textContent = 'Selected file: ' + this.files[0].name;
+    }
+});
 
         fileUploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
@@ -966,21 +972,27 @@ function formatMarkdown(markdownText) {
         });
 
         fileUploadArea.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.classList.remove('dragover');
-            batchFile.files = e.dataTransfer.files;
-        });
+    e.preventDefault();
+    this.classList.remove('dragover');
+
+    const droppedFiles = e.dataTransfer.files;
+    if (droppedFiles.length > 0) {
+        batchFile.files = droppedFiles; // This line is optional — not all browsers allow it
+        fileUploadArea.classList.add('file-selected');
+        fileUploadArea.querySelector('p').textContent = 'Selected file: ' + droppedFiles[0].name;
+    }
+});
 
         // Batch prediction form submission
         document.getElementById('batchForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            if (!batchFile.files || batchFile.files.length === 0) {
-                showAlert('batchAlert', 'error', 'Please select a file');
-                return;
-            }
-
-            predictBatch(batchFile.files[0]);
+            const file = batchFile.files[0] || currentFile;
+if (!file) {
+    showAlert('batchAlert', 'error', 'Please select or drop a file');
+    return;
+}
+predictBatch(file);
         });
 
         // Predict batch
