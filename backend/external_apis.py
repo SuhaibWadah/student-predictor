@@ -62,7 +62,7 @@ class OpenRouterAPI:
     OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
     def __init__(self):
-        self.api_key = key
+        self.api_key = self.key
         if not self.api_key:
             logger.warning("OPENROUTER_API_KEY not set. Plan generation will fail.")
 
