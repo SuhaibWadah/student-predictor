@@ -6,7 +6,9 @@ Defines SQLAlchemy ORM models for storing student data, predictions, and improve
 import json
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.dialects.sqlite import JSON
+# NOTE: Using 'sqlalchemy.dialects.sqlite.JSON' is fine for SQLite, 
+# but for PostgreSQL, Flask-SQLAlchemy handles JSON automatically 
+# if the environment is set up correctly.
 
 # Initialize SQLAlchemy database instance
 db = SQLAlchemy()
@@ -14,17 +16,6 @@ db = SQLAlchemy()
 class Student(db.Model):
     """
     Student model to store student information and their prediction records.
-    
-    Attributes:
-        id: Unique identifier (primary key)
-        name: Student's full name
-        year: Academic year (e.g., 1, 2, 3, 4)
-        semester: Semester number (e.g., 1, 2)
-        features: JSON object containing student features (study hours, attendance, etc.)
-        predicted_performance: Predicted performance value (float)
-        improvement_plan: Generated personalized improvement plan (text)
-        created_at: Timestamp when record was created
-        updated_at: Timestamp when record was last updated
     """
     
     __tablename__ = 'students'
@@ -38,10 +29,11 @@ class Student(db.Model):
     semester = db.Column(db.Integer, nullable=False)
     
     # Student features as JSON (flexible schema for various feature types)
-    features = db.Column(JSON, nullable=False)
+    features = db.Column(db.JSON, nullable=False) # Changed JSON import for clarity/compatibility
     
     # Prediction results
-    predicted_performance = db.Column(db.Float, nullable=True)
+    # 🌟 FIX: Change from db.Float to db.String to store the categorical result 🌟
+    predicted_performance = db.Column(db.String(50), nullable=True) 
     improvement_plan = db.Column(db.Text, nullable=True)
     
     # Metadata
@@ -55,9 +47,6 @@ class Student(db.Model):
     def to_dict(self):
         """
         Convert Student object to dictionary for JSON serialization.
-        
-        Returns:
-            dict: Dictionary representation of the student record
         """
         return {
             'id': self.id,
@@ -75,18 +64,6 @@ class Student(db.Model):
 class PredictionLog(db.Model):
     """
     Prediction log model to track all prediction requests for auditing and analytics.
-    
-    Attributes:
-        id: Unique identifier (primary key)
-        student_id: Foreign key reference to Student
-        prediction_type: Type of prediction ('single' or 'batch')
-        input_data: Original input data sent to the model
-        predicted_value: The predicted performance value
-        confidence_score: Confidence score of the prediction (if available)
-        api_response_time: Time taken by external APIs (in milliseconds)
-        status: Status of the prediction ('success', 'failed', 'partial')
-        error_message: Error message if prediction failed
-        created_at: Timestamp when prediction was made
     """
     
     __tablename__ = 'prediction_logs'
@@ -99,8 +76,10 @@ class PredictionLog(db.Model):
     
     # Prediction details
     prediction_type = db.Column(db.String(50), nullable=False)  # 'single' or 'batch'
-    input_data = db.Column(JSON, nullable=False)
-    predicted_value = db.Column(db.Float, nullable=True)
+    input_data = db.Column(db.JSON, nullable=False) # Changed to use db.JSON
+    
+    # 🌟 FIX: Change from db.Float to db.String to match the Student model 🌟
+    predicted_value = db.Column(db.String(50), nullable=True)
     confidence_score = db.Column(db.Float, nullable=True)
     
     # Performance metrics
@@ -120,9 +99,6 @@ class PredictionLog(db.Model):
     def to_dict(self):
         """
         Convert PredictionLog object to dictionary for JSON serialization.
-        
-        Returns:
-            dict: Dictionary representation of the prediction log
         """
         return {
             'id': self.id,
