@@ -883,8 +883,7 @@
             content.innerHTML = '<div class="result-card">' +
                                '<h3>Prediction Result</h3>' +
                                '<p><strong>Predicted Performance Score:</strong></p>' +
-                               '<div class="score-display">' + data.predicted_performance.toFixed(2) + '%</div>' +
-                               '<p><strong>Improvement Plan:</strong></p>' +
+                               '<div class="score-display">' + parseFloat(data.predicted_performance).toFixed(2) + '%</div>' + // <-- FIX 1                               '<p><strong>Improvement Plan:</strong></p>' +
                                '<p style="white-space: pre-wrap;">' + data.improvement_plan + '</p>' +
                                '</div>';
         }
@@ -994,7 +993,7 @@
             data.predictions.forEach(function(pred) {
                 var plan = pred.improvement_plan.substring(0, 100) + '...';
                 tableHTML += '<tr>' +
-                            '<td><strong>' + pred.predicted_performance.toFixed(2) + '%</strong></td>' +
+                            '<td><strong>' + parseFloat(pred.predicted_performance).toFixed(2)+ '%</strong></td>' +
                             '<td>' + plan + '</td>' +
                             '</tr>';
             });
@@ -1052,7 +1051,7 @@
             data.forEach(function(record) {
                 var date = new Date(record.created_at).toLocaleDateString();
                 tableHTML += '<tr>' +
-                            '<td><strong>' + record.predicted_performance.toFixed(2) + '%</strong></td>' +
+                            '<td><strong>' + parseFloat(record.predicted_performance).toFixed(2) + '%</strong></td>' +
                             '<td>' + date + '</td>' +
                             '</tr>';
             });
