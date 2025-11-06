@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Performance Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 12px 30px;
+            border: none;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="file"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        button[type="submit"],
+        .btn-primary {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button[type="submit"]:hover,
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button[type="submit"]:disabled,
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            padding: 12px 30px;
+            background: #e0e0e0;
+            color: #333;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.active {
+            display: block;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .alert.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-card {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .result-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .result-card p {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .score-display {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 15px 0;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        .results-table thead {
+            background: #f0f0f0;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .results-table th {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .results-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .results-table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 5px;
+            padding: 40px;
+            text-align: center;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover {
+            background: #f0f0f0;
+            border-color: #5568d3;
+        }
+
+        .file-upload-area.dragover {
+            background: #e8eef7;
+            border-color: #5568d3;
+        }
+
+        .file-upload-area p {
+            margin: 0;
+            color: #666;
+        }
+
+        .file-upload-area strong {
+            color: #667eea;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-box h4 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-box .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button[type="submit"],
+            .btn-primary {
+                width: 100%;
+            }
+
+            .results-table {
+                font-size: 0.9em;
+            }
+
+            .results-table th,
+            .results-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 Student Performance Predictor</h1>
+            <p>Predict student performance and generate personalized improvement plans</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="single">Single Prediction</button>
+            <button class="tab-button" data-tab="batch">Batch Prediction</button>
+            <button class="tab-button" data-tab="history">History</button>
+        </div>
+
+        <!-- Single Prediction Tab -->
+        <div id="single" class="tab-content active">
+            <div class="card">
+                <h2>Single Student Prediction</h2>
+                <p style="color: #666; margin-bottom: 20px;">Enter student information to get a performance prediction and personalized improvement plan.</p>
+
+                <div id="singleAlert" class="alert"></div>
+
+                <form id="singleForm">
+                    <!-- Personal Information Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Personal Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="maritalStatus">Marital Status *</label>
+                            <select id="maritalStatus" name="maritalStatus" required>
+                                <option value="">Select marital status</option>
+                                <option value="1">Single</option>
+                                <option value="2">Married</option>
+                                <option value="3">Widower</option>
+                                <option value="4">Divorced</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="gender">Gender *</label>
+                            <select id="gender" name="gender" required>
+                                <option value="">Select gender</option>
+                                <option value="1">Male</option>
+                                <option value="0">Female</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ageAtEnrollment">Age at Enrollment *</label>
+                            <input type="number" id="ageAtEnrollment" name="ageAtEnrollment" min="18" max="60" required placeholder="e.g., 20">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="applicationMode">Application Mode *</label>
+                            <select id="applicationMode" name="applicationMode" required>
+                                <option value="">Select application mode</option>
+                                <option value="1">1st phase - general contingent (Yemeni high school graduate)</option>
+                                <option value="15">International student (bachelor)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="international">International Student *</label>
+                        <select id="international" name="international" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <!-- Academic Information Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Academic Information</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="course">Course *</label>
+                            <select id="course" name="course" required>
+                                <option value="">Select course</option>
+                                <option value="33">Engineering</option>
+                                <option value="171">Multimedia</option>
+                                <option value="8014">Business Management</option>
+                                <option value="9119">IT & Computer Science</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="previousQualificationGrade">Previous Qualification Grade (0-100) *</label>
+                            <input type="number" id="previousQualificationGrade" name="previousQualificationGrade" min="0" max="100" required placeholder="e.g., 85">
+                            <p class="info-text">Your grade will be converted to the model's scale (0-200)</p>
+                        </div>
+                    </div>
+
+                    <!-- Family Background Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Family Background</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mothersQualification">Mother's Qualification *</label>
+                            <select id="mothersQualification" name="mothersQualification" required>
+                                <option value="">Select qualification</option>
+                                <option value="35">Uneducated</option>
+                                <option value="26">Primary School</option>
+                                <option value="14">Secondary School</option>
+                                <option value="1">High School</option>
+                                <option value="2">Bachelor</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mothersOccupation">Mother's Occupation *</label>
+                            <select id="mothersOccupation" name="mothersOccupation" required>
+                                <option value="">Select occupation</option>
+                                <option value="0">Student</option>
+                                <option value="1">Government Employee</option>
+                                <option value="4">Office Worker</option>
+                                <option value="123">Teacher</option>
+                                <option value="122">Health</option>
+                                <option value="151">Sales</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fathersQualification">Father's Qualification *</label>
+                            <select id="fathersQualification" name="fathersQualification" required>
+                                <option value="">Select qualification</option>
+                                <option value="35">Uneducated</option>
+                                <option value="26">Primary School</option>
+                                <option value="14">Secondary School</option>
+                                <option value="1">High School</option>
+                                <option value="2">Bachelor</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fathersOccupation">Father's Occupation *</label>
+                            <select id="fathersOccupation" name="fathersOccupation" required>
+                                <option value="">Select occupation</option>
+                                <option value="0">Student</option>
+                                <option value="1">Government Employee</option>
+                                <option value="4">Office Worker</option>
+                                <option value="123">Teacher</option>
+                                <option value="122">Health</option>
+                                <option value="151">Sales</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Financial & Status Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Financial & Status</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="displaced">Displaced *</label>
+                            <select id="displaced" name="displaced" required>
+                                <option value="">Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="educationalSpecialNeeds">Educational Special Needs *</label>
+                            <select id="educationalSpecialNeeds" name="educationalSpecialNeeds" required>
+                                <option value="">Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="debtor">Debtor *</label>
+                            <select id="debtor" name="debtor" required>
+                                <option value="">Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tuitionFeesUpToDate">Tuition Fees Up to Date *</label>
+                            <select id="tuitionFeesUpToDate" name="tuitionFeesUpToDate" required>
+                                <option value="">Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="scholarshipHolder">Scholarship Holder *</label>
+                        <select id="scholarshipHolder" name="scholarshipHolder" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <!-- Semester 1 Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Semester 1 Performance</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sem1Enrolled">Number of Subjects Taken (4-7) *</label>
+                            <input type="number" id="sem1Enrolled" name="sem1Enrolled" min="4" max="7" required placeholder="e.g., 6">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sem1Approved">Number of Subjects Passed *</label>
+                            <input type="number" id="sem1Approved" name="sem1Approved" min="0" max="7" required placeholder="e.g., 5">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sem1Grade">GPA for Semester 1 *</label>
+                        <input type="number" id="sem1Grade" name="sem1Grade" min="0" max="4" step="0.1" required placeholder="e.g., 3.5">
+                    </div>
+
+                    <!-- Semester 2 Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Semester 2 Performance</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sem2Enrolled">Number of Subjects Taken (4-7) *</label>
+                            <input type="number" id="sem2Enrolled" name="sem2Enrolled" min="4" max="7" required placeholder="e.g., 6">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sem2Approved">Number of Subjects Passed *</label>
+                            <input type="number" id="sem2Approved" name="sem2Approved" min="0" max="7" required placeholder="e.g., 5">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sem2Grade">GPA for Semester 2 *</label>
+                        <input type="number" id="sem2Grade" name="sem2Grade" min="0" max="4" step="0.1" required placeholder="e.g., 3.5">
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn-primary">Predict Performance</button>
+                        <button type="reset" class="btn-secondary">Clear Form</button>
+                    </div>
+                </form>
+
+                <div id="singleLoading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Processing prediction...</p>
+                </div>
+
+                <div id="singleResults" class="results">
+                    <h3>Prediction Results</h3>
+                    <div id="singleResultContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Prediction Tab -->
+        <div id="batch" class="tab-content">
+            <div class="card">
+                <h2>Batch Student Predictions</h2>
+                <p style="color: #666; margin-bottom: 20px;">Upload a CSV or Excel file with multiple students to process predictions in bulk.</p>
+
+                <div id="batchAlert" class="alert"></div>
+
+                <form id="batchForm">
+                    <div class="form-group">
+                        <label>Upload File (CSV or Excel) *</label>
+                        <div id="fileUploadArea" class="file-upload-area">
+                            <input type="file" id="batchFile" name="file" accept=".csv,.xlsx,.xls" style="display: none;">
+                            <p><strong>Click to select</strong> or drag and drop your file here</p>
+                            <p style="font-size: 0.9em; margin-top: 10px;">Supported formats: CSV, XLSX, XLS</p>
+                            <p style="font-size: 0.85em; color: #999; margin-top: 5px;">File should contain all the required columns</p>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn-primary">Process Batch</button>
+                        <button type="reset" class="btn-secondary">Clear</button>
+                    </div>
+                </form>
+
+                <div id="batchLoading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Processing batch predictions...</p>
+                </div>
+
+                <div id="batchResults" class="results">
+                    <h3>Batch Processing Results</h3>
+                    <div id="batchSummary" class="summary-stats"></div>
+                    <div id="batchResultContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history" class="tab-content">
+            <div class="card">
+                <h2>Prediction History</h2>
+                <p style="color: #666; margin-bottom: 20px;">View all previous predictions and improvement plans.</p>
+
+                <div id="historyAlert" class="alert"></div>
+
+                <div id="historyLoading" class="loading active">
+                    <div class="spinner"></div>
+                    <p>Loading history...</p>
+                </div>
+
+                <div id="historyResults" class="results">
+                    <div id="historyContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        var API_BASE_URL = 'http://localhost:5000/api';
+
+        // Feature mapping configuration
+        var featureMappings = {
+            // These are the fixed values that don't need user input
+            'daytime_evening_attendance': 1,  // Always daytime
+            'previous_qualification': 12,  // Always 12
+            'nationality': 11,  // Always 11
+            'curricular_units_1st_sem_credited': 30,  // Always 0
+            'curricular_units_1st_sem_evaluations': null,  // Will be set to enrolled value
+            'curricular_units_1st_sem_without_evaluations': 0,  // Always 0
+            'curricular_units_2nd_sem_credited': 30,  // Always 0
+            'curricular_units_2nd_sem_evaluations': null,  // Will be set to enrolled value
+            'curricular_units_2nd_sem_without_evaluations': 0,  // Always 0
+            'unemployment_rate': 17.10,  // Always 17.10
+            'inflation_rate': 25.8,  // Always 25.8
+            'gdp': 17.40  // Always 17.40
+        };
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var tabName = this.getAttribute('data-tab');
+                switchTab(tabName);
+            });
+        });
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(function(tab) {
+                tab.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+
+            // Load history when history tab is clicked
+            if (tabName === 'history') {
+                loadHistory();
+            }
+        }
+
+        // Single prediction form submission
+        document.getElementById('singleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            var formData = new FormData(this);
+            var data = {
+                // Personal Information
+                'marital_status': parseInt(formData.get('maritalStatus')),
+                'application_mode': parseInt(formData.get('applicationMode')),
+                'application_order': 1,  // Always 1
+                'course': parseInt(formData.get('course')),
+                'daytime_evening_attendance': 1,  // Always 1
+                'previous_qualification': 12,  // Always 12
+                'previous_qualification_grade': parseInt(formData.get('previousQualificationGrade')) * 2,  // Convert 0-100 to 0-200
+                'nationality': 11,  // Always 11
+                'mothers_qualification': parseInt(formData.get('mothersQualification')),
+                'fathers_qualification': parseInt(formData.get('fathersQualification')),
+                'mothers_occupation': parseInt(formData.get('mothersOccupation')),
+                'fathers_occupation': parseInt(formData.get('fathersOccupation')),
+                'admission_grade': parseInt(formData.get('previousQualificationGrade')) * 2,  // Same as previous qualification grade
+                'displaced': parseInt(formData.get('displaced')),
+                'educational_special_needs': parseInt(formData.get('educationalSpecialNeeds')),
+                'debtor': parseInt(formData.get('debtor')),
+                'tuition_fees_up_to_date': parseInt(formData.get('tuitionFeesUpToDate')),
+                'gender': parseInt(formData.get('gender')),
+                'scholarship_holder': parseInt(formData.get('scholarshipHolder')),
+                'age_at_enrollment': parseInt(formData.get('ageAtEnrollment')),
+                'international': parseInt(formData.get('international')),
+                // Semester 1
+                'curricular_units_1st_sem_credited': 0,  // Always 0
+                'curricular_units_1st_sem_enrolled': parseInt(formData.get('sem1Enrolled')),
+                'curricular_units_1st_sem_evaluations': parseInt(formData.get('sem1Enrolled')),  // Same as enrolled
+                'curricular_units_1st_sem_approved': parseInt(formData.get('sem1Approved')),
+                'curricular_units_1st_sem_grade': parseFloat(formData.get('sem1Grade')),
+                'curricular_units_1st_sem_without_evaluations': 0,  // Always 0
+                // Semester 2
+                'curricular_units_2nd_sem_credited': 0,  // Always 0
+                'curricular_units_2nd_sem_enrolled': parseInt(formData.get('sem2Enrolled')),
+                'curricular_units_2nd_sem_evaluations': parseInt(formData.get('sem2Enrolled')),  // Same as enrolled
+                'curricular_units_2nd_sem_approved': parseInt(formData.get('sem2Approved')),
+                'curricular_units_2nd_sem_grade': parseFloat(formData.get('sem2Grade')),
+                'curricular_units_2nd_sem_without_evaluations': 0,  // Always 0
+                // Economic indicators
+                'unemployment_rate': 17.10,  // Always 17.10
+                'inflation_rate': 25.8,  // Always 25.8
+                'gdp': 17.40  // Always 17.40
+            };
+
+            predictSingle(data);
+        });
+
+        // Predict single student
+        function predictSingle(data) {
+            var loading = document.getElementById('singleLoading');
+            var results = document.getElementById('singleResults');
+            var alert = document.getElementById('singleAlert');
+
+            loading.classList.add('active');
+            results.classList.remove('active');
+            alert.classList.remove('active');
+
+            fetch(API_BASE_URL + '/predict-single', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(function(response) {
+                return response.json().then(function(json) {
+                    return { status: response.status, data: json };
+                });
+            })
+            .then(function(result) {
+                loading.classList.remove('active');
+
+                if (result.status === 200) {
+                    displaySingleResult(result.data.data);
+                    results.classList.add('active');
+                    showAlert('singleAlert', 'success', 'Prediction completed successfully!');
+                } else {
+                    showAlert('singleAlert', 'error', result.data.error || 'Prediction failed');
+                }
+            })
+            .catch(function(error) {
+                loading.classList.remove('active');
+                showAlert('singleAlert', 'error', 'Error: ' + error.message);
+            });
+        }
+
+        // Display single prediction result
+        function displaySingleResult(data) {
+            var content = document.getElementById('singleResultContent');
+            content.innerHTML = '<div class="result-card">' +
+                               '<h3>Prediction Result</h3>' +
+                               '<p><strong>Predicted Performance Score:</strong></p>' +
+                               '<div class="score-display">' + data.predicted_performance.toFixed(2) + '%</div>' +
+                               '<p><strong>Improvement Plan:</strong></p>' +
+                               '<p style="white-space: pre-wrap;">' + data.improvement_plan + '</p>' +
+                               '</div>';
+        }
+
+        // File upload handling
+        var fileUploadArea = document.getElementById('fileUploadArea');
+        var batchFile = document.getElementById('batchFile');
+
+        fileUploadArea.addEventListener('click', function() {
+            batchFile.click();
+        });
+
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', function() {
+            this.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            batchFile.files = e.dataTransfer.files;
+        });
+
+        // Batch prediction form submission
+        document.getElementById('batchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!batchFile.files || batchFile.files.length === 0) {
+                showAlert('batchAlert', 'error', 'Please select a file');
+                return;
+            }
+
+            predictBatch(batchFile.files[0]);
+        });
+
+        // Predict batch
+        function predictBatch(file) {
+            var loading = document.getElementById('batchLoading');
+            var results = document.getElementById('batchResults');
+            var alert = document.getElementById('batchAlert');
+
+            loading.classList.add('active');
+            results.classList.remove('active');
+            alert.classList.remove('active');
+
+            var formData = new FormData();
+            formData.append('file', file);
+
+            fetch(API_BASE_URL + '/predict-batch', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) {
+                return response.json().then(function(json) {
+                    return { status: response.status, data: json };
+                });
+            })
+            .then(function(result) {
+                loading.classList.remove('active');
+
+                if (result.status === 200) {
+                    displayBatchResults(result.data.data);
+                    results.classList.add('active');
+                    showAlert('batchAlert', 'success', 'Batch processing completed!');
+                } else {
+                    showAlert('batchAlert', 'error', result.data.error || 'Batch processing failed');
+                }
+            })
+            .catch(function(error) {
+                loading.classList.remove('active');
+                showAlert('batchAlert', 'error', 'Error: ' + error.message);
+            });
+        }
+
+        // Display batch results
+        function displayBatchResults(data) {
+            var summary = document.getElementById('batchSummary');
+            var content = document.getElementById('batchResultContent');
+
+            // Display summary statistics
+            summary.innerHTML = '<div class="stat-box">' +
+                               '<h4>Total Records</h4>' +
+                               '<div class="value">' + data.total_records + '</div>' +
+                               '</div>' +
+                               '<div class="stat-box">' +
+                               '<h4>Successful</h4>' +
+                               '<div class="value" style="color: #51cf66;">' + data.successful + '</div>' +
+                               '</div>' +
+                               '<div class="stat-box">' +
+                               '<h4>Failed</h4>' +
+                               '<div class="value" style="color: #ff6b6b;">' + data.failed + '</div>' +
+                               '</div>' +
+                               '<div class="stat-box">' +
+                               '<h4>Duplicates</h4>' +
+                               '<div class="value" style="color: #ffa94d;">' + data.duplicates + '</div>' +
+                               '</div>';
+
+            // Display results table
+            var tableHTML = '<table class="results-table"><thead><tr>' +
+                           '<th>Predicted Score</th><th>Plan Summary</th>' +
+                           '</tr></thead><tbody>';
+
+            data.predictions.forEach(function(pred) {
+                var plan = pred.improvement_plan.substring(0, 100) + '...';
+                tableHTML += '<tr>' +
+                            '<td><strong>' + pred.predicted_performance.toFixed(2) + '%</strong></td>' +
+                            '<td>' + plan + '</td>' +
+                            '</tr>';
+            });
+
+            tableHTML += '</tbody></table>';
+
+            if (data.errors && data.errors.length > 0) {
+                tableHTML += '<h4 style="margin-top: 20px; color: #ff6b6b;">Errors:</h4><ul>';
+                data.errors.forEach(function(error) {
+                    tableHTML += '<li>' + error.error + '</li>';
+                });
+                tableHTML += '</ul>';
+            }
+
+            content.innerHTML = tableHTML;
+        }
+
+        // Load history
+        function loadHistory() {
+            var loading = document.getElementById('historyLoading');
+            var results = document.getElementById('historyResults');
+            var alert = document.getElementById('historyAlert');
+
+            loading.classList.add('active');
+            results.classList.remove('active');
+            alert.classList.remove('active');
+
+            fetch(API_BASE_URL + '/history?limit=50')
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(result) {
+                loading.classList.remove('active');
+
+                if (result.data && result.data.length > 0) {
+                    displayHistory(result.data);
+                    results.classList.add('active');
+                } else {
+                    showAlert('historyAlert', 'info', 'No prediction history found');
+                }
+            })
+            .catch(function(error) {
+                loading.classList.remove('active');
+                showAlert('historyAlert', 'error', 'Error: ' + error.message);
+            });
+        }
+
+        // Display history
+        function displayHistory(data) {
+            var content = document.getElementById('historyContent');
+            var tableHTML = '<table class="results-table"><thead><tr>' +
+                           '<th>Predicted Score</th><th>Date</th>' +
+                           '</tr></thead><tbody>';
+
+            data.forEach(function(record) {
+                var date = new Date(record.created_at).toLocaleDateString();
+                tableHTML += '<tr>' +
+                            '<td><strong>' + record.predicted_performance.toFixed(2) + '%</strong></td>' +
+                            '<td>' + date + '</td>' +
+                            '</tr>';
+            });
+
+            tableHTML += '</tbody></table>';
+            content.innerHTML = tableHTML;
+        }
+
+        // Show alert
+        function showAlert(elementId, type, message) {
+            var alert = document.getElementById(elementId);
+            alert.className = 'alert active ' + type;
+            alert.textContent = message;
+        }
+    </script>
+</body>
+</html>

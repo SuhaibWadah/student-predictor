@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: student_predictor_db
+    environment:
+      POSTGRES_USER: predictor_user
+      POSTGRES_PASSWORD: predictor_password
+      POSTGRES_DB: student_predictor
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U predictor_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flask Application
+  web:
+    build: .
+    container_name: student_predictor_app
+    command: python app.py
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_APP: app.py
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://predictor_user:predictor_password@db:5432/student_predictor
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:

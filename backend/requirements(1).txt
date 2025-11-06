@@ -1,0 +1,14 @@
+Flask
+Flask-CORS
+Flask-SQLAlchemy
+SQLAlchemy
+python-dotenv
+pandas
+openpyxl
+xlrd
+requests
+Werkzeug
+reportlab
+gunicorn
+gradio_client
+python-dotenv
