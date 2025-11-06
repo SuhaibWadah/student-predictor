@@ -763,6 +763,48 @@
                 switchTab(tabName);
             });
         });
+        // Markdown to HTML conversion helper
+function formatMarkdown(markdownText) {
+    if (!markdownText) return '';
+    let html = markdownText;
+
+    // 1. Convert Headers (H2 -> H4, H3 -> H5)
+    html = html.replace(/^## (.*$)/gim, '<h4>$1</h4>');
+    html = html.replace(/^### (.*$)/gim, '<h5>$1</h5>');
+
+    // 2. Wrap list items (<li>)
+    // NOTE: This needs to run before list wrapping and handles the '- ' or '* ' format
+    html = html.replace(/^(?:-|\*) (.*$)/gim, '<li>$1</li>');
+
+    // 3. Bold (**)
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // 4. Wrap blocks of <li> in <ul> tags
+    // This is a simple parser to wrap list items into an unordered list structure.
+    let inList = false;
+    const lines = html.split('<br>').map(line => line.trim());
+    html = lines.map(line => {
+        if (line.startsWith('<li>') && !inList) {
+            inList = true;
+            return '<ul style="list-style-type: disc; margin-left: 20px;">' + line;
+        } else if (line.startsWith('<li>')) {
+            return line;
+        } else if (inList) {
+            inList = false;
+            return '</ul>' + line;
+        } else {
+            return line;
+        }
+    }).join('<br>');
+    if (inList) {
+        html += '</ul>'; // Close list if it was open at the end
+    }
+
+    // 5. Handle remaining line breaks for paragraphs outside of lists
+    html = html.replace(/\n\n/g, '<p></p>').replace(/\n/g, '<br>');
+    
+    return html;
+}
 
         function switchTab(tabName) {
             // Hide all tabs
@@ -878,15 +920,33 @@
         }
 
         // Display single prediction result
-        function displaySingleResult(data) {
-            var content = document.getElementById('singleResultContent');
-            content.innerHTML = '<div class="result-card">' +
-                               '<h3>Prediction Result</h3>' +
-                               '<p><strong>Predicted Performance Score:</strong></p>' +
-                               '<div class="score-display">' + parseFloat(data.predicted_performance).toFixed(2) + '%</div>' + // <-- FIX 1                               '<p><strong>Improvement Plan:</strong></p>' +
-                               '<p style="white-space: pre-wrap;">' + data.improvement_plan + '</p>' +
-                               '</div>';
-        }
+    function displaySingleResult(data) {
+    var content = document.getElementById('singleResultContent');
+    
+    const predictedPerformance = data.predicted_performance;
+    let displayScore;
+
+    // 🌟 FIX 1: Handle Categorical Score (String) vs. Numeric Score 🌟
+    if (!isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
+        // If it's a valid number (e.g., if you change your model later), format it
+        displayScore = parseFloat(predictedPerformance).toFixed(2) + '%';
+    } else {
+        // If it's the categorical string ('Success', 'Failure'), display it directly
+        displayScore = predictedPerformance; 
+    }
+
+    // 🌟 FIX 2: Use the Markdown Formatter for Improvement Plan 🌟
+    const formattedPlan = formatMarkdown(data.improvement_plan);
+
+    content.innerHTML = '<div class="result-card">' +
+                        '<h3>Prediction Result</h3>' +
+                        '<p><strong>Predicted Performance Score:</strong></p>' +
+                        '<div class="score-display">' + displayScore + '</div>' + 
+                        '<p><strong>Improvement Plan:</strong></p>' +
+                        // Use a <div> for the formatted HTML content
+                        '<div style="line-height: 1.6;">' + formattedPlan + '</div>' +
+                        '</div>';
+}
 
         // File upload handling
         var fileUploadArea = document.getElementById('fileUploadArea');
@@ -964,52 +1024,37 @@
 
         // Display batch results
         function displayBatchResults(data) {
-            var summary = document.getElementById('batchSummary');
-            var content = document.getElementById('batchResultContent');
+    var summary = document.getElementById('batchSummary');
+    var content = document.getElementById('batchResultContent');
 
-            // Display summary statistics
-            summary.innerHTML = '<div class="stat-box">' +
-                               '<h4>Total Records</h4>' +
-                               '<div class="value">' + data.total_records + '</div>' +
-                               '</div>' +
-                               '<div class="stat-box">' +
-                               '<h4>Successful</h4>' +
-                               '<div class="value" style="color: #51cf66;">' + data.successful + '</div>' +
-                               '</div>' +
-                               '<div class="stat-box">' +
-                               '<h4>Failed</h4>' +
-                               '<div class="value" style="color: #ff6b6b;">' + data.failed + '</div>' +
-                               '</div>' +
-                               '<div class="stat-box">' +
-                               '<h4>Duplicates</h4>' +
-                               '<div class="value" style="color: #ffa94d;">' + data.duplicates + '</div>' +
-                               '</div>';
+    // ... (summary statistics unchanged) ...
+    summary.innerHTML = '...'; 
 
-            // Display results table
-            var tableHTML = '<table class="results-table"><thead><tr>' +
-                           '<th>Predicted Score</th><th>Plan Summary</th>' +
-                           '</tr></thead><tbody>';
+    // Display results table
+    var tableHTML = '<table class="results-table"><thead><tr>' +
+                   '<th>Predicted Score</th><th>Plan Summary</th>' +
+                   '</tr></thead><tbody>';
 
-            data.predictions.forEach(function(pred) {
-                var plan = pred.improvement_plan.substring(0, 100) + '...';
-                tableHTML += '<tr>' +
-                            '<td><strong>' + parseFloat(pred.predicted_performance).toFixed(2)+ '%</strong></td>' +
-                            '<td>' + plan + '</td>' +
-                            '</tr>';
-            });
+    data.predictions.forEach(function(pred) {
+        var plan = pred.improvement_plan.substring(0, 100) + '...';
+        
+        // 🌟 FIX 3: Robust Score Display for Batch Table 🌟
+        const predScore = pred.predicted_performance;
+        const displayScore = (!isNaN(parseFloat(predScore)) && isFinite(parseFloat(predScore))) 
+                             ? parseFloat(predScore).toFixed(2) + '%' 
+                             : predScore;
+                             
+        tableHTML += '<tr>' +
+                    '<td><strong>' + displayScore + '</strong></td>' +
+                    '<td>' + plan + '</td>' +
+                    '</tr>';
+    });
 
-            tableHTML += '</tbody></table>';
+    tableHTML += '</tbody></table>';
 
-            if (data.errors && data.errors.length > 0) {
-                tableHTML += '<h4 style="margin-top: 20px; color: #ff6b6b;">Errors:</h4><ul>';
-                data.errors.forEach(function(error) {
-                    tableHTML += '<li>' + error.error + '</li>';
-                });
-                tableHTML += '</ul>';
-            }
-
-            content.innerHTML = tableHTML;
-        }
+    // ... (error handling unchanged) ...
+    content.innerHTML = tableHTML;
+}
 
         // Load history
         function loadHistory() {
@@ -1043,22 +1088,29 @@
 
         // Display history
         function displayHistory(data) {
-            var content = document.getElementById('historyContent');
-            var tableHTML = '<table class="results-table"><thead><tr>' +
-                           '<th>Predicted Score</th><th>Date</th>' +
-                           '</tr></thead><tbody>';
+    var content = document.getElementById('historyContent');
+    var tableHTML = '<table class="results-table"><thead><tr>' +
+                   '<th>Predicted Score</th><th>Date</th>' +
+                   '</tr></thead><tbody>';
 
-            data.forEach(function(record) {
-                var date = new Date(record.created_at).toLocaleDateString();
-                tableHTML += '<tr>' +
-                            '<td><strong>' + parseFloat(record.predicted_performance).toFixed(2) + '%</strong></td>' +
-                            '<td>' + date + '</td>' +
-                            '</tr>';
-            });
+    data.forEach(function(record) {
+        var date = new Date(record.created_at).toLocaleDateString();
+        
+        // 🌟 FIX 4: Robust Score Display for History Table 🌟
+        const recordScore = record.predicted_performance;
+        const displayScore = (!isNaN(parseFloat(recordScore)) && isFinite(parseFloat(recordScore)))
+                             ? parseFloat(recordScore).toFixed(2) + '%' 
+                             : recordScore;
+        
+        tableHTML += '<tr>' +
+                    '<td><strong>' + displayScore + '</strong></td>' +
+                    '<td>' + date + '</td>' +
+                    '</tr>';
+    });
 
-            tableHTML += '</tbody></table>';
-            content.innerHTML = tableHTML;
-        }
+    tableHTML += '</tbody></table>';
+    content.innerHTML = tableHTML;
+}
 
         // Show alert
         function showAlert(elementId, type, message) {

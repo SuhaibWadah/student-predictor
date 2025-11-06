@@ -3,10 +3,8 @@ import requests
 import logging
 import json 
 import time
-# ⬇️ REQUIRED CHANGES HERE ⬇️
 from typing import Any, Optional, Tuple
 from gradio_client import Client
-# ⬆️ REQUIRED CHANGES HERE ⬆️
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +29,6 @@ class HuggingFaceAPI:
         if not self.client:
             return None, "Gradio Client failed to initialize."
         
-        # 1. Extract values in the correct order (36 parameters required)
         # CRITICAL: This line assumes 'features' is ALREADY ordered by the caller (routes.py).
         data_for_api = list(features.values())
         
@@ -45,17 +42,17 @@ class HuggingFaceAPI:
             result = self.client.predict(
                 *data_for_api, 
                 api_name=self.API_NAME,
-                #request_options={"timeout": timeout}
+                # request_options={"timeout": timeout} # Removed as per previous fix
             )
             response_time = int((time.time() - start_time) * 1000)
 
             logger.info("Prediction successful: %s, %dms", result, response_time)
+            # The result here is the categorical string (e.g., 'Success')
             return result, None
 
         except Exception as e:
             return None, f"Gradio Client prediction failed: {str(e)}. (Ensure the Space is running!)"
 
-# The OpenRouterAPI class remains the same, but include the logger import if it's not global
 class OpenRouterAPI:
     """
     Interface for OpenRouter.ai LLM API.
@@ -98,7 +95,7 @@ class OpenRouterAPI:
                 {'role': 'user', 'content': prompt}
             ],
             'temperature': 0.7,
-            'max_tokens': 500
+            'max_tokens': 2000 # 🌟 FIX 1: INCREASED FROM 500 TO 2000 (Prevents Truncation) 🌟
         }
 
         try:
@@ -142,7 +139,8 @@ class OpenRouterAPI:
     ) -> str:
         """Prepares the detailed prompt for the LLM."""
         
-        score_display = f"{predicted_score:.1f}" if isinstance(predicted_score, (int, float)) else str(predicted_score)
+        # 🌟 FIX 2: Handle categorical score as a safe string 🌟
+        score_display = str(predicted_score)
         
         features_text = "\n".join([f"- {k}: {v}" for k, v in features.items()])
         return f"""
