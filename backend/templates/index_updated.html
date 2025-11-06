@@ -1035,36 +1035,84 @@ predictBatch(file);
         }
 
         // Display batch results
-        function displayBatchResults(data) {
+       function displayBatchResults(data) {
     var summary = document.getElementById('batchSummary');
     var content = document.getElementById('batchResultContent');
 
-    // ... (summary statistics unchanged) ...
-    summary.innerHTML = '...'; 
+    // --- SUMMARY STATS (Optional: Update if needed) ---
+    // This section is commented out for brevity, but you should ensure it works.
+    summary.innerHTML = '<div class="summary-stats-inner">' +
+                        '<p>Total Records: <strong>' + data.total_records + '</strong></p>' +
+                        '<p>Successful Predictions: <strong style="color: green;">' + data.successful + '</strong></p>' +
+                        '<p>Failed Records: <strong style="color: red;">' + data.failed + '</strong></p>' +
+                        '<p>Duplicates Found: <strong style="color: orange;">' + data.duplicates + '</strong></p>' +
+                        '</div>';
+    
+    if (data.predictions.length === 0) {
+        content.innerHTML = '<p style="color:#666; margin-top:20px;">No successful predictions to display.</p>';
+        return;
+    }
 
-    // Display results table
-    var tableHTML = '<table class="results-table"><thead><tr>' +
-                   '<th>Predicted Score</th><th>Plan Summary</th>' +
-                   '</tr></thead><tbody>';
+    // Determine feature keys for dynamic columns (Use the first prediction as a template)
+    // NOTE: The features object is nested inside the prediction object in batch mode.
+    const firstFeatures = data.predictions[0].features || {}; 
+    const featureKeys = Object.keys(firstFeatures);
 
+    // 1. Build Table Header (<thead>)
+    let headerHTML = '<tr>' +
+                     '<th>Name</th>' +
+                     '<th>Year</th>' +
+                     '<th>Predicted Score</th>' +
+                     // Dynamically add headers for all features
+                     featureKeys.map(key => '<th>' + key.replace(/_/g, ' ') + '</th>').join('') +
+                     '<th>Plan Summary</th>' +
+                     '</tr>';
+
+    // 2. Build Table Body (<tbody>)
+    let bodyHTML = '';
     data.predictions.forEach(function(pred) {
-        var plan = pred.improvement_plan.substring(0, 100) + '...';
+        // Truncate the plan for the summary column
+        var planSummary = pred.improvement_plan.substring(0, 100) + '...';
         
-        // 🌟 FIX 3: Robust Score Display for Batch Table 🌟
+        // Robust Score Display (from previous fix)
         const predScore = pred.predicted_performance;
         const displayScore = (!isNaN(parseFloat(predScore)) && isFinite(parseFloat(predScore))) 
                              ? parseFloat(predScore).toFixed(2) + '%' 
                              : predScore;
-                             
-        tableHTML += '<tr>' +
-                    '<td><strong>' + displayScore + '</strong></td>' +
-                    '<td>' + plan + '</td>' +
-                    '</tr>';
+
+        // Start the row with Name, Year, and Predicted Score
+        let rowHTML = '<tr>' +
+                      '<td>' + pred.name + '</td>' +
+                      '<td>' + pred.year + '</td>' +
+                      '<td><strong>' + displayScore + '</strong></td>';
+
+        // Add cells for all features dynamically
+        featureKeys.forEach(key => {
+            // Use the nested 'features' object from the prediction response
+            const featureValue = pred.features ? pred.features[key] : 'N/A';
+            rowHTML += '<td>' + (featureValue !== undefined ? featureValue : 'N/A') + '</td>';
+        });
+
+        // Add the Plan Summary column
+        rowHTML += '<td>' + planSummary + '</td>' +
+                   '</tr>';
+        
+        bodyHTML += rowHTML;
     });
 
-    tableHTML += '</tbody></table>';
+    // 3. Assemble the full table
+    var tableHTML = '<table class="results-table">' +
+                    '<thead>' + headerHTML + '</thead>' +
+                    '<tbody>' + bodyHTML + '</tbody>' +
+                    '</table>';
 
-    // ... (error handling unchanged) ...
+    // Display error details if present
+    if (data.failed > 0) {
+        // You should add code here to display the error list (data.errors)
+        tableHTML += '<h4 style="color: red; margin-top: 20px;">' + data.failed + ' Record(s) Failed to Process</h4>';
+        // Add detailed error list here for better user feedback
+    }
+
     content.innerHTML = tableHTML;
 }
 
