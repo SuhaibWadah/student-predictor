@@ -79,7 +79,8 @@ class HuggingFaceAPI:
         for key in self.FEATURE_ORDER:
             value = features.get(key)
             
-            # Use pandas isna() for robust check against NaN/None
+            logger.debug(f"Feature {key}: {value!r}")
+
             if pd.isna(value) or value is None:
                 missing_keys.append(key)
                 
