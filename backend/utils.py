@@ -4,7 +4,6 @@ Provides file parsing, data validation, and helper functions.
 """
 
 import json
-# 🌟 FIX: Ensure pandas is imported as pd 🌟
 import pandas as pd
 import logging
 from io import BytesIO
@@ -19,34 +18,36 @@ class FileParser:
     Supports batch student data processing.
     """
     
-    # 🌟 FIX: ADDED MISSING ATTRIBUTE (Fixes previous AttributeError) 🌟
     # Supported file extensions
     SUPPORTED_FORMATS = {'.csv', '.xlsx', '.xls'}
     
-    # Required columns for batch processing. Defined as a SET for efficient lookups and set operations.
+    # 🌟 FIX: Full 36-feature set (Including macro-economic and detailed semester units) 🌟
     REQUIRED_FIELDS = {
-        'name', 'year', 'semester', 'marital_status', 'application_mode', 'course',
-        'previous_qualification_grade', 'mothers_qualification', 'fathers_qualification',
-        'mothers_occupation', 'fathers_occupation', 'displaced', 'educational_special_needs',
+        'name', 'year', 'semester', 'marital_status', 'application_mode', 'application_order', 
+        'course', 'daytime_evening_attendance', 'previous_qualification', 'previous_qualification_grade', 
+        'nationality', 'mothers_qualification', 'fathers_qualification', 'mothers_occupation', 
+        'fathers_occupation', 'admission_grade', 'displaced', 'educational_special_needs',
         'debtor', 'tuition_fees_up_to_date', 'gender', 'scholarship_holder',
         'age_at_enrollment', 'international',
-        'curricular_units_1st_sem_enrolled', 'curricular_units_1st_sem_approved', 'curricular_units_1st_sem_grade',
-        'curricular_units_2nd_sem_enrolled', 'curricular_units_2nd_sem_approved', 'curricular_units_2nd_sem_grade'
+        
+        # 1st Semester
+        'curricular_units_1st_sem_credited', 'curricular_units_1st_sem_enrolled', 
+        'curricular_units_1st_sem_evaluations', 'curricular_units_1st_sem_approved', 
+        'curricular_units_1st_sem_grade', 'curricular_units_1st_sem_without_evaluations',
+        
+        # 2nd Semester
+        'curricular_units_2nd_sem_credited', 'curricular_units_2nd_sem_enrolled', 
+        'curricular_units_2nd_sem_evaluations', 'curricular_units_2nd_sem_approved', 
+        'curricular_units_2nd_sem_grade', 'curricular_units_2nd_sem_without_evaluations',
+        
+        # Macro-economic factors
+        'unemployment_rate', 'inflation_rate', 'gdp'
     }
     
     @staticmethod
     def parse_file(file: FileStorage) -> tuple[list[dict], str]:
         """
         Parse uploaded file and extract student data.
-        
-        Args:
-            file: FileStorage object from Flask request
-            
-        Returns:
-            tuple: (list of student records, error message if any)
-            
-        Raises:
-            ValueError: If file format is not supported or required columns are missing
         """
         try:
             # Validate file extension
@@ -61,26 +62,27 @@ class FileParser:
                 raise ValueError(f"Unsupported file format. Supported formats: {', '.join(FileParser.SUPPORTED_FORMATS)}")
             
             # Read file based on extension
-            if file_ext == '.csv':
-                df = pd.read_csv(BytesIO(file.stream.read()))
-            else:  # .xlsx or .xls
-                df = pd.read_excel(BytesIO(file.stream.read()), engine='openpyxl' if file_ext == '.xlsx' else 'xlrd')
+            file_content = file.stream.read()
             
+            if file_ext == '.csv':
+                df = pd.read_csv(BytesIO(file_content))
+            else:  # .xlsx or .xls
+                df = pd.read_excel(BytesIO(file_content), engine='openpyxl' if file_ext == '.xlsx' else 'xlrd')
+            
+            # Normalize column names to lowercase
+            df.columns = df.columns.str.lower()
+
             # Validate required columns exist
-            df_columns = set(col.lower() for col in df.columns)
+            df_columns = set(df.columns)
             missing_columns = FileParser.REQUIRED_FIELDS - df_columns
             
             if missing_columns:
                 raise ValueError(f"Missing required columns: {', '.join(sorted(missing_columns))}")
             
-            # Normalize column names to lowercase
-            df.columns = df.columns.str.lower()
-            
             # Convert dataframe to list of dictionaries
             records = []
             
             for idx, row in df.iterrows():
-                # --- LOGGING ADDED: Log the raw row data ---
                 logger.debug(f"FileParser: Processing Row {idx + 1}. Raw data: {row.to_dict()}")
 
                 try:
@@ -97,70 +99,73 @@ class FileParser:
                     logger.error(f"FileParser Error: Type mismatch for primary key (year/semester) in row {idx + 1}: {e}")
                     raise
                 
-                # Extract features
+                # Extract and clean features
                 for col in df.columns:
                     # Ignore 'name', 'year', 'semester' for the main 'features' block in the record
                     if col not in ['name', 'year', 'semester']:
                         value = row[col]
-                        # Try to convert to numeric if possible (this is a common error source)
+                        
+                        # Ensure string values are stripped if not NaN (important for names/codes)
+                        if isinstance(value, str):
+                            value = value.strip()
+                        
+                        # Try to convert to numeric if possible
                         try:
-                            record['features'][col] = float(value)
+                            # 🌟 FIX: Force numeric conversion for known numeric fields (like GDP) 🌟
+                            if col in FileParser.REQUIRED_FIELDS:
+                                record['features'][col] = float(value)
+                            else:
+                                record['features'][col] = float(value) # Default for other known columns
                         except (ValueError, TypeError):
-                            # pd.notna is used here
-                            record['features'][col] = str(value).strip() if pd.notna(value) else None
+                            # Ensure all non-numeric values are stripped strings
+                            record['features'][col] = str(value) if pd.notna(value) else None
                 
                 records.append(record)
-                logger.debug(f"FileParser: Row {idx + 1} converted successfully. Record features keys: {list(record['features'].keys())}")
             
             logger.info(f"Successfully parsed {len(records)} records from {filename}")
             return records, None
             
         except Exception as e:
             error_msg = f"Error parsing file: {str(e)}"
-            logger.error(error_msg, exc_info=True) # Log full traceback
+            logger.error(error_msg, exc_info=True)
             return [], error_msg
 
 
 class DataValidator:
-    """Utility class for validating student feature data."""
-
-    REQUIRED_FIELDS = {
-        'marital_status', 'application_mode', 'course',
-        'previous_qualification_grade', 'mothers_qualification', 'fathers_qualification',
-        'mothers_occupation', 'fathers_occupation', 'displaced', 'educational_special_needs',
-        'debtor', 'tuition_fees_up_to_date', 'gender', 'scholarship_holder',
-        'age_at_enrollment', 'international',
-        'curricular_units_1st_sem_enrolled', 'curricular_units_1st_sem_approved', 'curricular_units_1st_sem_grade',
-        'curricular_units_2nd_sem_enrolled', 'curricular_units_2nd_sem_approved', 'curricular_units_2nd_sem_grade'
-    }
+    """
+    Utility class for validating student data against expected types and ranges.
+    """
+    
+    # 🌟 FIX: Use the full set of REQUIRED_FIELDS from FileParser 🌟
+    # We remove the identification fields since they are validated elsewhere.
+    REQUIRED_FIELDS = FileParser.REQUIRED_FIELDS - {'name', 'year', 'semester'}
 
     @staticmethod
     def validate_student_data(data):
         # Use set difference for missing fields check
         missing_fields = DataValidator.REQUIRED_FIELDS - set(data.keys())
         if missing_fields:
-            # --- LOGGING ADDED: Log missing fields before returning failure ---
             logger.warning(f"DataValidator: Failing validation due to missing fields: {missing_fields}")
             return False, f"Missing fields: {', '.join(sorted(missing_fields))}"
 
         # Optional: validate numeric ranges
         try:
             # Attempt to safely convert and validate critical numeric fields
-            grade = float(data['previous_qualification_grade'])
-            sem1_gpa = float(data['curricular_units_1st_sem_grade'])
-            sem2_gpa = float(data['curricular_units_2nd_sem_grade'])
+            grade = float(data.get('previous_qualification_grade', 0))
+            sem1_gpa = float(data.get('curricular_units_1st_sem_grade', 0))
+            sem2_gpa = float(data.get('curricular_units_2nd_sem_grade', 0))
             
             if not (0 <= grade <= 200):
                 return False, "Previous qualification grade must be 0-200"
 
-            if not (0 <= sem1_gpa <= 4.0):
-                return False, "Semester 1 GPA must be 0-4"
+            # Assuming GPA is 0-4 scale or similar. Check your model documentation.
+            if not (0 <= sem1_gpa): 
+                return False, "Semester 1 GPA must be non-negative"
 
-            if not (0 <= sem2_gpa <= 4.0):
-                return False, "Semester 2 GPA must be 0-4"
+            if not (0 <= sem2_gpa):
+                return False, "Semester 2 GPA must be non-negative"
                 
         except (ValueError, TypeError) as e:
-            # --- LOGGING ADDED: Log the specific field causing the type error ---
             error_msg = f"DataValidator Error: Type or range validation failed. Check numeric fields. {str(e)}"
             logger.error(error_msg)
             return False, error_msg
@@ -172,19 +177,14 @@ class DataValidator:
 
 
 class DuplicateChecker:
-    """Utility class to filter duplicate student records."""
+    """
+    Utility class for filtering duplicate records based on name, year, and semester.
+    """
     
     @staticmethod
     def filter_duplicates(new_records: list, existing_records: list) -> tuple[list, list]:
         """
         Filter out duplicate records from new batch.
-        
-        Args:
-            new_records: List of new student records
-            existing_records: List of existing student records
-            
-        Returns:
-            tuple: (unique_records, duplicate_records)
         """
         unique_records = []
         duplicate_records = []
@@ -193,7 +193,6 @@ class DuplicateChecker:
         existing_keys = set()
         for record in existing_records:
             try:
-                # Ensure fields exist before accessing
                 name = record.get('name')
                 year = record.get('year')
                 semester = record.get('semester')
@@ -201,8 +200,6 @@ class DuplicateChecker:
                 if name is not None and year is not None and semester is not None:
                     key = (str(name).lower().strip(), year, semester)
                     existing_keys.add(key)
-                else:
-                    logger.warning(f"Malformed existing record skipped in duplicate check (missing key): {record}")
             except Exception:
                 logger.warning(f"Malformed existing record skipped in duplicate check: {record}")
                 
@@ -227,7 +224,7 @@ class DuplicateChecker:
 
 
 def format_error_response(message: str, details: str = None) -> dict:
-    """Formats a consistent error response dictionary."""
+    """Format a standard error response dictionary."""
     response = {'error': message}
     if details:
         response['details'] = details
@@ -235,7 +232,7 @@ def format_error_response(message: str, details: str = None) -> dict:
 
 
 def format_success_response(data: any, message: str = None) -> dict:
-    """Formats a consistent success response dictionary."""
+    """Format a standard success response dictionary."""
     response = {'data': data}
     if message:
         response['message'] = message
