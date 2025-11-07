@@ -5,7 +5,6 @@ import json
 import time
 from typing import Any, Optional, Tuple
 from gradio_client import Client
-# 🌟 FIX 1: Import pandas for pd.isna() check 🌟
 import pandas as pd 
 
 logger = logging.getLogger(__name__)
@@ -16,9 +15,7 @@ class HuggingFaceAPI:
     HF_SPACE_ID = "suhaibW/student-performance-predictor"
     API_NAME = "/predict" 
 
-    # 🌟 FIX 2: Complete and correct 36-feature list from routes.py mapping 🌟
     FEATURE_ORDER = [
-        # This list MUST match the exact order expected by the Gradio space (param_0 to param_35).
         'marital_status',
         'application_mode',
         'application_order', 
@@ -57,7 +54,7 @@ class HuggingFaceAPI:
         'gdp' 
     ]
     
-    EXPECTED_INPUT_COUNT = len(FEATURE_ORDER) # Now correctly 36
+    EXPECTED_INPUT_COUNT = len(FEATURE_ORDER)
 
     def __init__(self):
         self.api_key = os.getenv('HUGGINGFACE_API_KEY') or os.getenv('HF_TOKEN')
@@ -80,7 +77,6 @@ class HuggingFaceAPI:
             value = features.get(key)
             
             # --- START FIX FOR GDP NULL/MISSING VALUE ---
-            # If the feature is GPP and it's null/missing, assign the fallback value.
             if key == 'gdp' and (pd.isna(value) or value is None):
                 fallback_gdp_value = 17.4
                 value = fallback_gdp_value
@@ -89,7 +85,6 @@ class HuggingFaceAPI:
             
             logger.debug(f"Feature {key}: {value!r}")
 
-            # Use pandas isna() for robust check against NaN/None
             if pd.isna(value) or value is None:
                 missing_keys.append(key)
                 
@@ -108,7 +103,6 @@ class HuggingFaceAPI:
             
             logger.debug(f"HuggingFaceAPI: Final input array (first 5 and last 5): {data_for_api[:5]}...{data_for_api[-5:]}")
             
-            # Unpack the parameters as positional arguments
             result = self.client.predict(
                 *data_for_api, 
                 api_name=self.API_NAME,
@@ -124,7 +118,6 @@ class HuggingFaceAPI:
 
 
 class OpenRouterAPI:
-    # ... (Rest of the class remains the same)
     """
     Interface for OpenRouter.ai LLM API.
     Generates improvement plans based on predictions.
@@ -147,8 +140,7 @@ class OpenRouterAPI:
     def generate_improvement_plan(
         self,
         student_name: str,
-        year: int,
-        semester: int,
+        study_year: str, # Changed argument name
         features: dict[str, Any],
         predicted_score: Any,
         timeout: int = 30
@@ -157,7 +149,8 @@ class OpenRouterAPI:
         if not self.api_key:
             return None, "OpenRouter API key not configured"
 
-        prompt = self._prepare_plan_prompt(student_name, year, semester, features, predicted_score)
+        # Removed 'year' and 'semester' args, using 'study_year' and passing it to the prompt preparer
+        prompt = self._prepare_plan_prompt(student_name, study_year, features, predicted_score)
 
         payload = {
             'model': 'openai/gpt-3.5-turbo',
@@ -166,7 +159,7 @@ class OpenRouterAPI:
                 {'role': 'user', 'content': prompt}
             ],
             'temperature': 0.7,
-            'max_tokens': 885 # Max tokens for the response
+            'max_tokens': 885
         }
 
         try:
@@ -203,23 +196,22 @@ class OpenRouterAPI:
     @staticmethod
     def _prepare_plan_prompt(
         student_name: str,
-        year: int,
-        semester: int,
+        study_year: str,
         features: dict[str, Any],
         predicted_score: Any
     ) -> str:
         """Prepares the detailed prompt for the LLM."""
         
-        # Handle categorical score as a safe string
         score_display = str(predicted_score)
         
+        # NOTE: features dict now contains 'major' and 'year' but we use 'study_year' 
+        # for a clearer prompt.
         features_text = "\n".join([f"- {k}: {v}" for k, v in features.items()])
         return f"""
 Generate a personalized improvement plan for the following student:
 
 **Student:** {student_name}
-**Year:** {year}
-**Semester:** {semester}
+**Study Year:** {study_year}
 **Predicted Performance:** {score_display}
 
 **Relevant Features:**
