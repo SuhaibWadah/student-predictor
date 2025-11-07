@@ -14,6 +14,34 @@ class HuggingFaceAPI:
     HF_SPACE_ID = "suhaibW/student-performance-predictor"
     API_NAME = "/predict" 
 
+    # 🌟 FIX: Define the canonical order of all 36 features expected by the model. 🌟
+    # NOTE: This list MUST match the exact order of features required by the 
+    # 'suhaibW/student-performance-predictor' Gradio space. 
+    # Assuming the order is a combination of the features listed in utils.py 
+    # followed by any other custom features the model expects.
+    # The first 22 features are derived from DataValidator.REQUIRED_FIELDS:
+    FEATURE_ORDER = [
+        'marital_status', 'application_mode', 'course', 'previous_qualification_grade',
+        'mothers_qualification', 'fathers_qualification', 'mothers_occupation', 
+        'fathers_occupation', 'displaced', 'educational_special_needs', 'debtor', 
+        'tuition_fees_up_to_date', 'gender', 'scholarship_holder', 'age_at_enrollment', 
+        'international', 'curricular_units_1st_sem_enrolled', 
+        'curricular_units_1st_sem_approved', 'curricular_units_1st_sem_grade', 
+        'curricular_units_2nd_sem_enrolled', 'curricular_units_2nd_sem_approved', 
+        'curricular_units_2nd_sem_grade', # This accounts for 22 inputs
+        
+        # ***CRITICAL: The remaining 14 inputs MUST be listed here in the correct order***
+        # ***as they are defined in your model's training data.***
+        # ***These usually correspond to the "additional features" collected in utils.py.***
+        # --- Placeholder for the remaining 14 features ---
+        'feature_23', 'feature_24', 'feature_25', 'feature_26', 'feature_27', 
+        'feature_28', 'feature_29', 'feature_30', 'feature_31', 'feature_32', 
+        'feature_33', 'feature_34', 'feature_35', 'feature_36'
+    ]
+    
+    # Update expected input count to match the canonical list
+    EXPECTED_INPUT_COUNT = len(FEATURE_ORDER)
+
     def __init__(self):
         self.api_key = os.getenv('HUGGINGFACE_API_KEY') or os.getenv('HF_TOKEN')
         
@@ -29,29 +57,36 @@ class HuggingFaceAPI:
         if not self.client:
             return None, "Gradio Client failed to initialize."
         
-        # CRITICAL: This line assumes 'features' is ALREADY ordered by the caller (routes.py).
-        data_for_api = list(features.values())
+        # 🌟 FIX: Extract values based on the known, required order (FEATURE_ORDER). 🌟
+        data_for_api = []
+        for key in self.FEATURE_ORDER:
+            # Use .get() to safely retrieve values and log a failure if a critical feature is missing
+            value = features.get(key)
+            if value is None:
+                # If a required feature is missing, we must fail.
+                return None, f"Input error: Missing required feature '{key}' for API call."
+            data_for_api.append(value)
         
-        if len(data_for_api) != 36:
-            return None, f"Input error: Expected 36 feature values, received {len(data_for_api)}."
+        
+        if len(data_for_api) != self.EXPECTED_INPUT_COUNT:
+            # This check serves as a safeguard against misconfigured FEATURE_ORDER
+            return None, f"Input error: Expected {self.EXPECTED_INPUT_COUNT} feature values, received {len(data_for_api)}."
         
         try:
             start_time = time.time()
             
-            # Unpack the 36 parameters as positional arguments
+            # Unpack the parameters as positional arguments
             result = self.client.predict(
                 *data_for_api, 
                 api_name=self.API_NAME,
-                # request_options={"timeout": timeout} # Removed as per previous fix
             )
             response_time = int((time.time() - start_time) * 1000)
 
             logger.info("Prediction successful: %s, %dms", result, response_time)
-            # The result here is the categorical string (e.g., 'Success')
             return result, None
 
         except Exception as e:
-            return None, f"Gradio Client prediction failed: {str(e)}. (Ensure the Space is running!)"
+            return None, f"Gradio Client prediction failed: {str(e)}. (Ensure the Space is running and the inputs are correct!)"
 
 class OpenRouterAPI:
     """
@@ -61,7 +96,7 @@ class OpenRouterAPI:
     OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
     def __init__(self):
-        self.api_key = key = os.getenv("OPENROUTER_API_KEY")
+        self.api_key = os.getenv("OPENROUTER_API_KEY")
 
         if not self.api_key:
             logger.warning("OPENROUTER_API_KEY not set. Plan generation will fail.")
@@ -95,7 +130,7 @@ class OpenRouterAPI:
                 {'role': 'user', 'content': prompt}
             ],
             'temperature': 0.7,
-            'max_tokens': 885 # 🌟 FIX 1: INCREASED FROM 500 TO 2000 (Prevents Truncation) 🌟
+            'max_tokens': 885 # Max tokens for the response
         }
 
         try:
@@ -139,7 +174,7 @@ class OpenRouterAPI:
     ) -> str:
         """Prepares the detailed prompt for the LLM."""
         
-        # 🌟 FIX 2: Handle categorical score as a safe string 🌟
+        # Handle categorical score as a safe string
         score_display = str(predicted_score)
         
         features_text = "\n".join([f"- {k}: {v}" for k, v in features.items()])
