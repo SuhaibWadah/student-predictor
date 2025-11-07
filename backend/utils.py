@@ -8,7 +8,7 @@ import pandas as pd
 import logging
 from io import BytesIO
 from werkzeug.datastructures import FileStorage
-from typing import Any
+
 logger = logging.getLogger(__name__)
 
 class FileParser:

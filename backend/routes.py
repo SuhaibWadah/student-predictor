@@ -8,9 +8,10 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 import traceback
+# 🌟 Import pandas to use pd.isna() robustly (assuming pandas is available in this context) 🌟
 import pandas as pd 
 
-from models import db, Student # Removed PredictionLog
+from models import db, Student, PredictionLog
 from utils import FileParser, DataValidator, DuplicateChecker, format_error_response, format_success_response
 from external_apis import HuggingFaceAPI, OpenRouterAPI
 from pdf_generator import ImprovementPlanPDFGenerator
@@ -26,35 +27,67 @@ openrouter_api = OpenRouterAPI()
 pdf_generator = ImprovementPlanPDFGenerator()
 
 # Configuration
-MAX_FILE_SIZE = 10 * 1024 * 1024
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
 
-# The HF_INPUT_ORDER is crucial for the model and remains correct.
+# 🌟 CRITICAL MAPPING FOR HUGGING FACE API 🌟
+# This dictionary maps the user-friendly keys (from your JSON/DB) to the 
+# POSITIONAL ORDER (param_0 to param_35) required by your Gradio Space model.
+# NOTE: YOU MUST verify this order against your actual Gradio Space inputs!
 HF_INPUT_ORDER = {
-    0: 'marital_status', 1: 'application_mode', 2: 'application_order', 3: 'course',
-    4: 'daytime_evening_attendance', 5: 'previous_qualification', 6: 'previous_qualification_grade', 7: 'nacionality',
-    8: 'mothers_qualification', 9: 'fathers_qualification', 10: 'mothers_occupation', 11: 'fathers_occupation',
-    12: 'admission_grade', 13: 'displaced', 14: 'educational_special_needs', 15: 'debtor',
-    16: 'tuition_fees_up_to_date', 17: 'gender', 18: 'scholarship_holder', 19: 'age_at_enrollment',
-    20: 'international', 21: 'curricular_units_1st_sem_credited', 22: 'curricular_units_1st_sem_enrolled',
-    23: 'curricular_units_1st_sem_evaluations', 24: 'curricular_units_1st_sem_approved', 25: 'curricular_units_1st_sem_grade',
-    26: 'curricular_units_1st_sem_without_evaluations', 27: 'curricular_units_2nd_sem_credited', 28: 'curricular_units_2nd_sem_enrolled',
-    29: 'curricular_units_2nd_sem_evaluations', 30: 'curricular_units_2nd_sem_approved', 31: 'curricular_units_2nd_sem_grade',
-    32: 'curricular_units_2nd_sem_without_evaluations', 33: 'unemployment_rate', 34: 'inflation_rate', 35: 'gdp'
+    0: 'marital_status',
+    1: 'application_mode',
+    2: 'application_order',
+    3: 'course',
+    4: 'daytime_evening_attendance',
+    5: 'previous_qualification',
+    6: 'previous_qualification_grade',
+    7: 'nationality',
+    8: 'mothers_qualification',
+    9: 'fathers_qualification',
+    10: 'mothers_occupation',
+    11: 'fathers_occupation',
+    12: 'admission_grade',
+    13: 'displaced',
+    14: 'educational_special_needs',
+    15: 'debtor',
+    16: 'tuition_fees_up_to_date',
+    17: 'gender',
+    18: 'scholarship_holder',
+    19: 'age_at_enrollment',
+    20: 'international',
+    21: 'curricular_units_1st_sem_credited',
+    22: 'curricular_units_1st_sem_enrolled',
+    23: 'curricular_units_1st_sem_evaluations',
+    24: 'curricular_units_1st_sem_approved',
+    25: 'curricular_units_1st_sem_grade',
+    26: 'curricular_units_1st_sem_without_evaluations',
+    27: 'curricular_units_2nd_sem_credited',
+    28: 'curricular_units_2nd_sem_enrolled',
+    29: 'curricular_units_2nd_sem_evaluations',
+    30: 'curricular_units_2nd_sem_approved',
+    31: 'curricular_units_2nd_sem_grade',
+    32: 'curricular_units_2nd_sem_without_evaluations',
+    33: 'unemployment_rate',
+    34: 'inflation_rate',
+    35: 'gdp'
 }
+# ----------------------------------------
 
 
 def prepare_hf_features(input_data: dict) -> tuple[dict, str | None]:
     """
     Ensures input data is correctly ordered and converted to float for the HF model.
-    Imputes 'gdp' if missing/NaN and replaces Python 'NaN' with a valid float 
-    in the original 'input_data' dictionary to prevent downstream errors.
+    CRITICAL FIX: Imputes 'gdp' if missing/NaN and replaces Python 'NaN' with a 
+    valid float in the original 'input_data' dictionary to prevent JSON errors 
+    when saving to the database.
     
     Returns: (ordered_dict_of_36_features, error_message)
     """
     ordered_features = {}
     
+    # Define the default GDP value
     DEFAULT_GDP = 17.4
 
     for i in range(36):
@@ -64,71 +97,60 @@ def prepare_hf_features(input_data: dict) -> tuple[dict, str | None]:
         
         value = input_data.get(key)
         
+        # 1. Robustly check for null/NaN values
+        # pd.isna() handles None, np.nan, and pandas nulls robustly.
         is_null_or_nan = pd.isna(value)
 
+        # 2. Imputation/Fallback Logic
         if is_null_or_nan:
             if key == 'gdp':
                 value = DEFAULT_GDP
                 logger.warning(f"Feature '{key}' was missing/null. Imputing with default value: {DEFAULT_GDP}")
             else:
+                 # Non-GDP critical features must be present
                  return {}, f"Missing required feature: {key}"
         
+        # 3. Ensure final value is a float for the model
         try:
             float_value = float(value)
             ordered_features[key] = float_value
         except (ValueError, TypeError):
             return {}, f"Invalid data type for feature {key}. Expected numeric, got {value!r}."
 
+        # 4. CRITICAL: Update the original input_data dictionary for database saving
+        # This replaces any original Python 'NaN' value (which JSON cannot handle) 
+        # with the numeric float value. This is especially important for 'gdp'.
         if key in input_data:
              input_data[key] = ordered_features[key]
     
     return ordered_features, None
 
 
-def _extract_all_db_fields(data: dict, predicted_score: str = None, improvement_plan: str = None) -> dict:
-    """Helper to extract all fields necessary for the wide-format Student model."""
-    
-    # Map the core features from the data dictionary (must match model columns)
-    db_fields = {key: data.get(key) for key in HF_INPUT_ORDER.values()}
-    
-    # Add new identifier fields (must match model columns)
-    db_fields['name'] = data.get('name', data.get('student_name', 'Single Prediction'))
-    db_fields['major'] = data.get('major', None)
-    db_fields['study_year'] = data.get('study_year', None)
-    
-    # Add prediction results
-    if predicted_score:
-        db_fields['predicted_performance'] = str(predicted_score).replace("Predicted class: ", "")
-    if improvement_plan:
-        db_fields['improvement_plan'] = improvement_plan
-    
-    return db_fields
-
-
 @api_bp.route('/predict-single', methods=['POST'])
 def predict_single():
     try:
         data = request.get_json()
-        
+        logger.info("Single prediction payload: %s", data)
+
         if not data:
             return jsonify({"error": "No input data provided"}), 400
 
-        # The input data must contain the 36 features + name + optional identifiers (major, study_year)
+        # 1. Map and validate the input data order (gdp is corrected inside this call)
         hf_features, validation_error = prepare_hf_features(data)
         if validation_error:
             return jsonify({"error": validation_error}), 400
 
-        # 1. Prediction
+        # 2. Call your prediction function
         predicted_score, error = hf_api.predict(hf_features)
         if error:
             return jsonify({"error": error}), 500
 
-        # 2. Plan Generation (using study_year instead of year/semester)
-        study_year = data.get('study_year', data.get('year', 'Unknown')) # Fallback for prompt
+        # 3. Generate improvement plan
         improvement_plan, plan_error = openrouter_api.generate_improvement_plan(
-            student_name=data.get('name', data.get('student_name', 'Unknown')),
-            study_year=study_year,
-            features=data,
+            student_name=data.get('student_name', 'Unknown'),
+            year=data.get('year', 1),
+            semester=data.get('semester', 1),
+            features=data, # Use the corrected 'data' for the LLM prompt context
             predicted_score=predicted_score
         )
         
@@ -136,21 +158,22 @@ def predict_single():
             logger.warning(f"Plan generation failed for single prediction: {plan_error}")
             improvement_plan = "Improvement plan generation temporarily unavailable."
 
-        # 3. Store prediction in database (Wide-Format)
-        db_fields = _extract_all_db_fields(
-            data,
-            predicted_score=predicted_score,
+        # 4. Store prediction in database
+        # 'data' now contains the corrected numeric 'gdp' value (not NaN) for JSON serialization.
+        student = Student(
+            name=data.get('student_name', 'Single Prediction'),
+            year=data.get('year', 1),
+            semester=data.get('semester', 1),
+            features=data, # Use 'data' which now has the corrected 'gdp'
+            predicted_performance=predicted_score, # Categorical string
             improvement_plan=improvement_plan
         )
-        
-        student = Student(**db_fields)
-        
         db.session.add(student)
-        db.session.commit()
+        db.session.commit() # Commit the transaction to save the record!
         
         response = {
-            "predicted_performance": student.predicted_performance,
-            "improvement_plan": student.improvement_plan,
+            "predicted_performance": predicted_score,
+            "improvement_plan": improvement_plan,
             "student_id": student.id
         }
         return jsonify({"data": response}), 200
@@ -167,6 +190,7 @@ def predict_batch():
     Endpoint for batch student performance predictions.
     """
     try:
+        # Check if file is in request
         if 'file' not in request.files:
             return jsonify(format_error_response("No file provided")), 400
         
@@ -175,14 +199,15 @@ def predict_batch():
         if file.filename == '':
             return jsonify(format_error_response("No file selected")), 400
         
-        file.seek(0, 2)
+        # Validate file size
+        file.seek(0, 2)  # Seek to end
         file_size = file.tell()
-        file.seek(0)
+        file.seek(0)  # Reset to beginning
         
         if file_size > MAX_FILE_SIZE:
             return jsonify(format_error_response(f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB")), 400
         
-        # Parse file (records are now FLAT dictionaries of all 36 features + identifiers)
+        # Parse file
         records, parse_error = FileParser.parse_file(file)
         
         if parse_error:
@@ -193,29 +218,34 @@ def predict_batch():
         
         logger.info(f"Batch processing started. Total records: {len(records)}")
         
-        # NOTE: PredictionLog creation removed as requested.
-        
-        # Get existing records for duplicate checking (only need name, study_year for uniqueness)
-        existing_students = db.session.query(Student).all()
-        existing_records = [{'name': s.name, 'study_year': s.study_year} for s in existing_students]
-        
-        # Filter duplicates based on name and study_year
-        unique_records, duplicate_records = DuplicateChecker.filter_duplicates(
-            [{'name': r['name'], 'study_year': r.get('study_year')} for r in records], 
-            existing_records
+        # Create prediction log entry
+        pred_log = PredictionLog(
+            prediction_type='batch',
+            input_data={'total_records': len(records)},
+            status='pending'
         )
+        db.session.add(pred_log)
+        db.session.commit()
+        
+        # Get existing records for duplicate checking
+        existing_students = db.session.query(Student).all()
+        existing_records = [{'name': s.name, 'year': s.year, 'semester': s.semester} for s in existing_students]
+        
+        # Filter duplicates
+        unique_records, duplicate_records = DuplicateChecker.filter_duplicates(records, existing_records)
         
         logger.info(f"Unique records: {len(unique_records)}, Duplicates: {len(duplicate_records)}")
         
+        # Process predictions
         predictions = []
         errors = []
         successful_count = 0
         
         for idx, record in enumerate(unique_records):
             try:
-                # 1. Prepare Features (record is already a flat dictionary containing all features)
-                # prepare_hf_features extracts the 36 features for the model and handles GDP imputation.
-                hf_features, validation_error = prepare_hf_features(record)
+                # 1. Map and validate the input data order for HF
+                # CRITICAL: record['features'] is modified in place to fix 'gdp' (NaN -> 17.4)
+                hf_features, validation_error = prepare_hf_features(record['features'])
                 if validation_error:
                     raise ValueError(validation_error)
                 
@@ -231,11 +261,11 @@ def predict_batch():
                     continue
                 
                 # 3. Generate improvement plan
-                study_year = record.get('study_year', 'Unknown')
                 improvement_plan, or_error = openrouter_api.generate_improvement_plan(
                     record['name'],
-                    study_year,
-                    record, # Pass the flat record which contains all features
+                    record['year'],
+                    record['semester'],
+                    record['features'], # Use the corrected features dictionary
                     predicted_score
                 )
                 
@@ -243,23 +273,26 @@ def predict_batch():
                     logger.warning(f"Plan generation failed for {record['name']}: {or_error}")
                     improvement_plan = "Plan generation temporarily unavailable."
                 
-                # 4. Store in database (Wide-Format)
-                db_fields = _extract_all_db_fields(
-                    record,
-                    predicted_score=predicted_score,
+                # 4. Store in database
+                # record['features'] is now safe for database JSON storage.
+                student = Student(
+                    name=record['name'],
+                    year=record['year'],
+                    semester=record['semester'],
+                    features=record['features'],
+                    predicted_performance=predicted_score,
                     improvement_plan=improvement_plan
                 )
-                
-                student = Student(**db_fields)
                 db.session.add(student)
-                db.session.flush()
+                db.session.flush()  # Get the ID without committing
                 
                 predictions.append({
                     'student_id': student.id,
                     'name': student.name,
-                    'study_year': student.study_year,
-                    'predicted_performance': student.predicted_performance,
-                    'improvement_plan': student.improvement_plan
+                    'year': student.year,
+                    'semester': student.semester,
+                    'predicted_performance': predicted_score,
+                    'improvement_plan': improvement_plan
                 })
                 
                 successful_count += 1
@@ -272,12 +305,17 @@ def predict_batch():
                     'error': str(e)
                 })
         
+        # Commit all changes
         db.session.commit()
         
-        # NOTE: PredictionLog update removed.
+        # Update prediction log
+        pred_log.predicted_value = successful_count
+        pred_log.status = 'success' if successful_count > 0 else 'failed'
+        db.session.commit()
         
         logger.info(f"Batch processing completed. Successful: {successful_count}, Failed: {len(errors)}")
         
+        # Return response
         response_data = {
             'total_records': len(records),
             'successful': successful_count,
@@ -292,6 +330,7 @@ def predict_batch():
         
     except Exception as e:
         logger.error(f"Error in predict_batch: {str(e)}")
+        # Rollback in case of a fatal error before final commit
         db.session.rollback() 
         return jsonify(format_error_response("Internal server error", str(e))), 500
 
@@ -305,12 +344,15 @@ def get_history():
         limit = request.args.get('limit', 50, type=int)
         offset = request.args.get('offset', 0, type=int)
         
-        limit = min(limit, 100)
+        # Validate parameters
+        limit = min(limit, 100)  # Max 100 records per request
         offset = max(offset, 0)
         
+        # Query database
         students = db.session.query(Student).order_by(Student.created_at.desc()).limit(limit).offset(offset).all()
         total = db.session.query(Student).count()
         
+        # Format response
         data = [student.to_dict() for student in students]
         
         return jsonify({
@@ -354,23 +396,24 @@ def download_student_pdf(student_id):
         if not student:
             return jsonify(format_error_response("Student not found")), 404
         
-        # NOTE: PDF generator needs a dictionary of features for context, so we pass student.to_dict()
+        # Generate PDF
         pdf_filename, error = pdf_generator.generate_improvement_plan_pdf(
             student.name,
-            student.study_year,
-            None, # Removed semester arg
+            student.year,
+            student.semester,
             student.predicted_performance,
             student.improvement_plan,
-            student.to_dict() # Pass the full dictionary of features
+            student.features if isinstance(student.features, dict) else {}
         )
         
         if error:
             logger.error(f"PDF generation failed: {error}")
             return jsonify(format_error_response("PDF generation failed", error)), 500
         
+        # Return file path for download
         return jsonify(format_success_response({
             'filename': pdf_filename,
-            'download_url': f'/api/download/{pdf_filename}'
+            'download_url': f'/api/download/{pdf_filename}' # Use /api prefix as it's registered under it
         }, "PDF generated successfully")), 200
         
     except Exception as e:
@@ -387,9 +430,11 @@ def download_file(filename):
         from flask import send_file
         import os
         
+        # Security: Validate filename to prevent directory traversal
         if '..' in filename or '/' in filename or '\\' in filename:
             return jsonify(format_error_response("Invalid filename")), 400
         
+        # CRITICAL: This path must be correct for Render/local FS
         pdf_path = os.path.join(os.getcwd(), 'pdfs', filename) 
         
         if not os.path.exists(pdf_path):

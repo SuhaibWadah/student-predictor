@@ -1,131 +1,126 @@
 """
 Database Models for Student Performance Predictor
-Defines a wide SQLAlchemy ORM model (Student) to store all original features, 
-new identifiers, and the prediction result in a single table for detailed research.
+Defines SQLAlchemy ORM models for storing student data, predictions, and improvement plans.
 """
 
 import json
-from datetime import date
+from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func
+# NOTE: Using 'sqlalchemy.dialects.sqlite.JSON' is fine for SQLite, 
+# but for PostgreSQL, Flask-SQLAlchemy handles JSON automatically 
+# if the environment is set up correctly.
 
 # Initialize SQLAlchemy database instance
 db = SQLAlchemy()
 
-# Define the data types for repeated columns
-# Note: Most of your original features are categorical codes or numeric values. 
-# They are best stored as Integer or Float for direct analysis.
-
 class Student(db.Model):
     """
-    Student model storing all 36 input features plus identifiers and the final prediction.
-    Designed for comprehensive data logging and research.
+    Student model to store student information and their prediction records.
     """
     
     __tablename__ = 'students'
     
-    # ----------------------------------------
-    # I. IDENTIFIERS AND METADATA (New/Required)
-    # ----------------------------------------
+    # Primary key
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    # New Identifier Fields
+    # Student information
     name = db.Column(db.String(255), nullable=False, index=True)
-    major = db.Column(db.String(100), nullable=True) # Added Major
-    study_year = db.Column(db.String(50), nullable=True) # Added Study Year (e.g., 'First', 'Second')
+    year = db.Column(db.Integer, nullable=False)
+    semester = db.Column(db.Integer, nullable=False)
     
-    # Prediction Result
-    # Stores only the result class, e.g., 'Success', 'Failure', 'Dropout'.
+    # Student features as JSON (flexible schema for various feature types)
+    features = db.Column(db.JSON, nullable=False) # Changed JSON import for clarity/compatibility
+    
+    # Prediction results
+    # 🌟 FIX: Change from db.Float to db.String to store the categorical result 🌟
     predicted_performance = db.Column(db.String(50), nullable=True) 
-    improvement_plan = db.Column(db.Text, nullable=True) # Storing the full LLM plan
+    improvement_plan = db.Column(db.Text, nullable=True)
     
-    # Metadata (Date only)
-    created_at = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    # Metadata
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # ----------------------------------------
-    # II. CORE STUDENT FEATURES (36 Columns)
-    # ----------------------------------------
-    # NOTE: Underscores replace spaces/special characters for SQL column names.
-
-    # Personal & Application
-    marital_status = db.Column(db.Integer, nullable=True)
-    application_mode = db.Column(db.Integer, nullable=True)
-    application_order = db.Column(db.Integer, nullable=True)
-    course = db.Column(db.Integer, nullable=True) # Corresponds to Course ID
-    daytime_evening_attendance = db.Column(db.Integer, nullable=True)
-    previous_qualification = db.Column(db.Integer, nullable=True)
-    previous_qualification_grade = db.Column(db.Float, nullable=True)
-    nacionality = db.Column(db.Integer, nullable=True)
-    
-    # Parents' Data
-    mothers_qualification = db.Column(db.Integer, nullable=True)
-    fathers_qualification = db.Column(db.Integer, nullable=True)
-    mothers_occupation = db.Column(db.Integer, nullable=True)
-    fathers_occupation = db.Column(db.Integer, nullable=True)
-    admission_grade = db.Column(db.Float, nullable=True)
-    
-    # Status Indicators
-    displaced = db.Column(db.Integer, nullable=True)
-    educational_special_needs = db.Column(db.Integer, nullable=True)
-    debtor = db.Column(db.Integer, nullable=True)
-    tuition_fees_up_to_date = db.Column(db.Integer, nullable=True)
-    gender = db.Column(db.Integer, nullable=True)
-    scholarship_holder = db.Column(db.Integer, nullable=True)
-    age_at_enrollment = db.Column(db.Integer, nullable=True)
-    international = db.Column(db.Integer, nullable=True)
-    
-    # 1st Semester Performance Metrics
-    curricular_units_1st_sem_credited = db.Column(db.Integer, nullable=True)
-    curricular_units_1st_sem_enrolled = db.Column(db.Integer, nullable=True)
-    curricular_units_1st_sem_evaluations = db.Column(db.Integer, nullable=True)
-    curricular_units_1st_sem_approved = db.Column(db.Integer, nullable=True)
-    curricular_units_1st_sem_grade = db.Column(db.Float, nullable=True) # GPA/Average Grade
-    curricular_units_1st_sem_without_evaluations = db.Column(db.Integer, nullable=True)
-    
-    # 2nd Semester Performance Metrics
-    curricular_units_2nd_sem_credited = db.Column(db.Integer, nullable=True)
-    curricular_units_2nd_sem_enrolled = db.Column(db.Integer, nullable=True)
-    curricular_units_2nd_sem_evaluations = db.Column(db.Integer, nullable=True)
-    curricular_units_2nd_sem_approved = db.Column(db.Integer, nullable=True)
-    curricular_units_2nd_sem_grade = db.Column(db.Float, nullable=True) # GPA/Average Grade
-    curricular_units_2nd_sem_without_evaluations = db.Column(db.Integer, nullable=True)
-    
-    # Macro-Economic Factors
-    unemployment_rate = db.Column(db.Float, nullable=True)
-    inflation_rate = db.Column(db.Float, nullable=True)
-    gdp = db.Column(db.Float, nullable=True)
-    
-    # Target Variable (if collected later)
-    target = db.Column(db.String(50), nullable=True) # E.g., 'Dropout', 'Success', 'Graduated'
-    
-    # ----------------------------------------
-
     def __repr__(self):
         """String representation of Student object"""
-        return f'<Student {self.id}: {self.name} (Year {self.study_year}) - {self.predicted_performance}>'
+        return f'<Student {self.id}: {self.name} (Year {self.year}, Sem {self.semester})>'
     
     def to_dict(self):
         """
         Convert Student object to dictionary for JSON serialization.
         """
-        # Automatically collect all attributes defined on the model
-        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        
-        # Ensure date is correctly formatted
-        if 'created_at' in data and data['created_at']:
-             data['created_at'] = data['created_at'].isoformat()
-             
-        return data
+        return {
+            'id': self.id,
+            'name': self.name,
+            'year': self.year,
+            'semester': self.semester,
+            'features': self.features if isinstance(self.features, dict) else json.loads(self.features),
+            'predicted_performance': self.predicted_performance,
+            'improvement_plan': self.improvement_plan,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
 
-# Removed: PredictionLog class as requested
+
+class PredictionLog(db.Model):
+    """
+    Prediction log model to track all prediction requests for auditing and analytics.
+    """
+    
+    __tablename__ = 'prediction_logs'
+    
+    # Primary key
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    
+    # Foreign key reference
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=True, index=True)
+    
+    # Prediction details
+    prediction_type = db.Column(db.String(50), nullable=False)  # 'single' or 'batch'
+    input_data = db.Column(db.JSON, nullable=False) # Changed to use db.JSON
+    
+    # 🌟 FIX: Change from db.Float to db.String to match the Student model 🌟
+    predicted_value = db.Column(db.String(50), nullable=True)
+    confidence_score = db.Column(db.Float, nullable=True)
+    
+    # Performance metrics
+    api_response_time = db.Column(db.Integer, nullable=True)  # milliseconds
+    
+    # Status tracking
+    status = db.Column(db.String(50), nullable=False, default='pending')  # 'success', 'failed', 'partial'
+    error_message = db.Column(db.Text, nullable=True)
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    
+    def __repr__(self):
+        """String representation of PredictionLog object"""
+        return f'<PredictionLog {self.id}: {self.prediction_type} - {self.status}>'
+    
+    def to_dict(self):
+        """
+        Convert PredictionLog object to dictionary for JSON serialization.
+        """
+        return {
+            'id': self.id,
+            'student_id': self.student_id,
+            'prediction_type': self.prediction_type,
+            'input_data': self.input_data if isinstance(self.input_data, dict) else json.loads(self.input_data),
+            'predicted_value': self.predicted_value,
+            'confidence_score': self.confidence_score,
+            'api_response_time': self.api_response_time,
+            'status': self.status,
+            'error_message': self.error_message,
+            'created_at': self.created_at.isoformat()
+        }
+
 
 def init_db():
     """
     Initialize database tables.
     Creates all tables defined in the models if they don't already exist.
+    Should be called once when the application starts.
     """
     try:
         db.create_all()
-        print("Database tables created successfully (Student table only - Wide Format).")
     except Exception as e:
         print(f"Error initializing database: {str(e)}")
