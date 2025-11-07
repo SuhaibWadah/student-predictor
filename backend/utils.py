@@ -21,7 +21,15 @@ class FileParser:
     SUPPORTED_FORMATS = {'.csv', '.xlsx', '.xls'}
     
     # Required columns for batch processing
-    REQUIRED_COLUMNS = {'name', 'year', 'semester'}
+   REQUIRED_FIELDS = [
+        'name', 'year', 'semester', 'marital_status', 'application_mode', 'course',
+        'previous_qualification_grade', 'mothers_qualification', 'fathers_qualification',
+        'mothers_occupation', 'fathers_occupation', 'displaced', 'educational_special_needs',
+        'debtor', 'tuition_fees_up_to_date', 'gender', 'scholarship_holder',
+        'age_at_enrollment', 'international',
+        'curricular_units_1st_sem_enrolled', 'curricular_units_1st_sem_approved', 'curricular_units_1st_sem_grade',
+        'curricular_units_2nd_sem_enrolled', 'curricular_units_2nd_sem_approved', 'curricular_units_2nd_sem_grade'
+    ]
     
     @staticmethod
     def parse_file(file: FileStorage) -> tuple[list[dict], str]:
