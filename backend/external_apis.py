@@ -5,16 +5,8 @@ import json
 import time
 from typing import Any, Optional, Tuple
 from gradio_client import Client
-
-logger = logging.getLogger(__name__)
-
-import os
-import requests
-import logging
-import json 
-import time
-from typing import Any, Optional, Tuple
-from gradio_client import Client
+# 🌟 FIX 1: Import pandas for pd.isna() check 🌟
+import pandas as pd 
 
 logger = logging.getLogger(__name__)
 
@@ -24,27 +16,50 @@ class HuggingFaceAPI:
     HF_SPACE_ID = "suhaibW/student-performance-predictor"
     API_NAME = "/predict" 
 
-    # Define the canonical order of all 36 features expected by the model. 
+    # 🌟 FIX 2: Complete and correct 36-feature list from routes.py mapping 🌟
     FEATURE_ORDER = [
-        'marital_status', 'application_mode', 'course', 'previous_qualification_grade',
-        'mothers_qualification', 'fathers_qualification', 'mothers_occupation', 
-        'fathers_occupation', 'displaced', 'educational_special_needs', 'debtor', 
-        'tuition_fees_up_to_date', 'gender', 'scholarship_holder', 'age_at_enrollment', 
-        'international', 'curricular_units_1st_sem_enrolled', 
-        'curricular_units_1st_sem_approved', 'curricular_units_1st_sem_grade', 
-        'curricular_units_2nd_sem_enrolled', 'curricular_units_2nd_sem_approved', 
-        'curricular_units_2nd_sem_grade', # 22 features
-        
-        # ***CRITICAL: Placeholder for the remaining 14 features in the correct order***
-        'feature_23', 'feature_24', 'feature_25', 'feature_25', 'feature_27', 
-        'feature_28', 'feature_29', 'feature_30', 'feature_31', 'feature_32', 
-        'feature_33', 'feature_34', 'feature_35', 'feature_36'
+        # This list MUST match the exact order expected by the Gradio space (param_0 to param_35).
+        'marital_status',
+        'application_mode',
+        'application_order', # Added missing feature
+        'course',
+        'daytime_evening_attendance', # Added missing feature
+        'previous_qualification', # Added missing feature
+        'previous_qualification_grade',
+        'nationality', # Added missing feature
+        'mothers_qualification',
+        'fathers_qualification',
+        'mothers_occupation',
+        'fathers_occupation',
+        'admission_grade', # Added missing feature
+        'displaced',
+        'educational_special_needs',
+        'debtor',
+        'tuition_fees_up_to_date',
+        'gender',
+        'scholarship_holder',
+        'age_at_enrollment',
+        'international',
+        'curricular_units_1st_sem_credited', # Added missing feature
+        'curricular_units_1st_sem_enrolled',
+        'curricular_units_1st_sem_evaluations', # Added missing feature
+        'curricular_units_1st_sem_approved',
+        'curricular_units_1st_sem_grade',
+        'curricular_units_1st_sem_without_evaluations', # Added missing feature
+        'curricular_units_2nd_sem_credited', # Added missing feature
+        'curricular_units_2nd_sem_enrolled',
+        'curricular_units_2nd_sem_evaluations', # Added missing feature
+        'curricular_units_2nd_sem_approved',
+        'curricular_units_2nd_sem_grade',
+        'curricular_units_2nd_sem_without_evaluations', # Added missing feature
+        'unemployment_rate', # Added missing feature
+        'inflation_rate', # Added missing feature
+        'gdp' # Added missing feature
     ]
     
-    EXPECTED_INPUT_COUNT = len(FEATURE_ORDER)
+    EXPECTED_INPUT_COUNT = len(FEATURE_ORDER) # Now correctly 36
 
     def __init__(self):
-        # ... (remains the same)
         self.api_key = os.getenv('HUGGINGFACE_API_KEY') or os.getenv('HF_TOKEN')
         
         try:
@@ -71,19 +86,16 @@ class HuggingFaceAPI:
             data_for_api.append(value)
         
         if missing_keys:
-            # --- LOGGING ADDED: Log exactly which features are missing/null ---
             error_msg = f"Input error: Critical features are missing/null for API call: {', '.join(missing_keys)}"
             logger.error(error_msg)
             return None, error_msg
 
         if len(data_for_api) != self.EXPECTED_INPUT_COUNT:
-            # This check serves as a safeguard against misconfigured FEATURE_ORDER
             return None, f"Input error: Expected {self.EXPECTED_INPUT_COUNT} feature values, received {len(data_for_api)}."
         
         try:
             start_time = time.time()
             
-            # --- LOGGING ADDED: Log the final input array right before the API call ---
             logger.debug(f"HuggingFaceAPI: Final input array (first 5 and last 5): {data_for_api[:5]}...{data_for_api[-5:]}")
             
             # Unpack the parameters as positional arguments
@@ -97,7 +109,6 @@ class HuggingFaceAPI:
             return result, None
 
         except Exception as e:
-            # --- LOGGING ADDED: Log the prediction failure with traceback ---
             logger.error(f"Gradio Client prediction failed: {str(e)}", exc_info=True)
             return None, f"Gradio Client prediction failed: {str(e)}. (Ensure the Space is running and the inputs are correct!)"
 

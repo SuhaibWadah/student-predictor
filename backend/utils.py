@@ -4,6 +4,7 @@ Provides file parsing, data validation, and helper functions.
 """
 
 import json
+# 🌟 FIX: Ensure pandas is imported as pd 🌟
 import pandas as pd
 import logging
 from io import BytesIO
@@ -18,13 +19,12 @@ class FileParser:
     Supports batch student data processing.
     """
     
-    # 🌟 STRUCTURAL FIX: Moved to the very top 🌟
+    # 🌟 FIX: ADDED MISSING ATTRIBUTE (Fixes previous AttributeError) 🌟
     # Supported file extensions
     SUPPORTED_FORMATS = {'.csv', '.xlsx', '.xls'}
     
     # Required columns for batch processing. Defined as a SET for efficient lookups and set operations.
     REQUIRED_FIELDS = {
-        # ... (all 22 required fields)
         'name', 'year', 'semester', 'marital_status', 'application_mode', 'course',
         'previous_qualification_grade', 'mothers_qualification', 'fathers_qualification',
         'mothers_occupation', 'fathers_occupation', 'displaced', 'educational_special_needs',
@@ -36,19 +36,28 @@ class FileParser:
     
     @staticmethod
     def parse_file(file: FileStorage) -> tuple[list[dict], str]:
-        # ... (rest of the method, remains unchanged)
-        # ...
+        """
+        Parse uploaded file and extract student data.
+        
+        Args:
+            file: FileStorage object from Flask request
+            
+        Returns:
+            tuple: (list of student records, error message if any)
+            
+        Raises:
+            ValueError: If file format is not supported or required columns are missing
+        """
         try:
             # Validate file extension
             filename = file.filename.lower()
             file_ext = None
-            for ext in FileParser.SUPPORTED_FORMATS: # Line 47
+            for ext in FileParser.SUPPORTED_FORMATS:
                 if filename.endswith(ext):
                     file_ext = ext
                     break
             
             if not file_ext:
-                # Accessing FileParser.SUPPORTED_FORMATS is now safe
                 raise ValueError(f"Unsupported file format. Supported formats: {', '.join(FileParser.SUPPORTED_FORMATS)}")
             
             # Read file based on extension
@@ -83,11 +92,9 @@ class FileParser:
                     }
                 except KeyError as e:
                     logger.error(f"FileParser Error: Missing required primary key in row {idx + 1}: {e}")
-                    # Re-raise to stop processing a bad file
                     raise
                 except ValueError as e:
                     logger.error(f"FileParser Error: Type mismatch for primary key (year/semester) in row {idx + 1}: {e}")
-                    # Re-raise to stop processing a bad file
                     raise
                 
                 # Extract features
@@ -99,7 +106,7 @@ class FileParser:
                         try:
                             record['features'][col] = float(value)
                         except (ValueError, TypeError):
-                            # Ensure all non-numeric values are stripped strings
+                            # pd.notna is used here
                             record['features'][col] = str(value).strip() if pd.notna(value) else None
                 
                 records.append(record)
@@ -115,7 +122,7 @@ class FileParser:
 
 
 class DataValidator:
-    # ... (remains the same)
+    """Utility class for validating student feature data."""
 
     REQUIRED_FIELDS = {
         'marital_status', 'application_mode', 'course',
@@ -165,7 +172,7 @@ class DataValidator:
 
 
 class DuplicateChecker:
-    # ... (remains the same)
+    """Utility class to filter duplicate student records."""
     
     @staticmethod
     def filter_duplicates(new_records: list, existing_records: list) -> tuple[list, list]:
@@ -220,7 +227,7 @@ class DuplicateChecker:
 
 
 def format_error_response(message: str, details: str = None) -> dict:
-    # ... (remains the same)
+    """Formats a consistent error response dictionary."""
     response = {'error': message}
     if details:
         response['details'] = details
@@ -228,7 +235,7 @@ def format_error_response(message: str, details: str = None) -> dict:
 
 
 def format_success_response(data: any, message: str = None) -> dict:
-    # ... (remains the same)
+    """Formats a consistent success response dictionary."""
     response = {'data': data}
     if message:
         response['message'] = message
