@@ -21,17 +21,17 @@ class HuggingFaceAPI:
         # This list MUST match the exact order expected by the Gradio space (param_0 to param_35).
         'marital_status',
         'application_mode',
-        'application_order', # Added missing feature
+        'application_order', 
         'course',
-        'daytime_evening_attendance', # Added missing feature
-        'previous_qualification', # Added missing feature
+        'daytime_evening_attendance', 
+        'previous_qualification', 
         'previous_qualification_grade',
-        'nationality', # Added missing feature
+        'nationality', 
         'mothers_qualification',
         'fathers_qualification',
         'mothers_occupation',
         'fathers_occupation',
-        'admission_grade', # Added missing feature
+        'admission_grade', 
         'displaced',
         'educational_special_needs',
         'debtor',
@@ -40,21 +40,21 @@ class HuggingFaceAPI:
         'scholarship_holder',
         'age_at_enrollment',
         'international',
-        'curricular_units_1st_sem_credited', # Added missing feature
+        'curricular_units_1st_sem_credited', 
         'curricular_units_1st_sem_enrolled',
-        'curricular_units_1st_sem_evaluations', # Added missing feature
+        'curricular_units_1st_sem_evaluations', 
         'curricular_units_1st_sem_approved',
         'curricular_units_1st_sem_grade',
-        'curricular_units_1st_sem_without_evaluations', # Added missing feature
-        'curricular_units_2nd_sem_credited', # Added missing feature
+        'curricular_units_1st_sem_without_evaluations', 
+        'curricular_units_2nd_sem_credited', 
         'curricular_units_2nd_sem_enrolled',
-        'curricular_units_2nd_sem_evaluations', # Added missing feature
+        'curricular_units_2nd_sem_evaluations', 
         'curricular_units_2nd_sem_approved',
         'curricular_units_2nd_sem_grade',
-        'curricular_units_2nd_sem_without_evaluations', # Added missing feature
-        'unemployment_rate', # Added missing feature
-        'inflation_rate', # Added missing feature
-        'gdp' # Added missing feature
+        'curricular_units_2nd_sem_without_evaluations', 
+        'unemployment_rate', 
+        'inflation_rate', 
+        'gdp' 
     ]
     
     EXPECTED_INPUT_COUNT = len(FEATURE_ORDER) # Now correctly 36
@@ -79,8 +79,17 @@ class HuggingFaceAPI:
         for key in self.FEATURE_ORDER:
             value = features.get(key)
             
+            # --- START FIX FOR GDP NULL/MISSING VALUE ---
+            # If the feature is GPP and it's null/missing, assign the fallback value.
+            if key == 'gdp' and (pd.isna(value) or value is None):
+                fallback_gdp_value = 17.4
+                value = fallback_gdp_value
+                logger.warning(f"Feature 'gdp' was missing/null. Imputing with fallback value: {fallback_gdp_value}")
+            # --- END FIX ---
+            
             logger.debug(f"Feature {key}: {value!r}")
 
+            # Use pandas isna() for robust check against NaN/None
             if pd.isna(value) or value is None:
                 missing_keys.append(key)
                 
@@ -115,6 +124,7 @@ class HuggingFaceAPI:
 
 
 class OpenRouterAPI:
+    # ... (Rest of the class remains the same)
     """
     Interface for OpenRouter.ai LLM API.
     Generates improvement plans based on predictions.
