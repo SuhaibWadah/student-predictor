@@ -13,10 +13,18 @@ from werkzeug.datastructures import FileStorage
 logger = logging.getLogger(__name__)
 
 class FileParser:
-    # ... (rest of the class definition remains the same)
-
+    """
+    Utility class for parsing various file formats (CSV, Excel).
+    Supports batch student data processing.
+    """
+    
+    # 🌟 STRUCTURAL FIX: Moved to the very top 🌟
+    # Supported file extensions
+    SUPPORTED_FORMATS = {'.csv', '.xlsx', '.xls'}
+    
     # Required columns for batch processing. Defined as a SET for efficient lookups and set operations.
     REQUIRED_FIELDS = {
+        # ... (all 22 required fields)
         'name', 'year', 'semester', 'marital_status', 'application_mode', 'course',
         'previous_qualification_grade', 'mothers_qualification', 'fathers_qualification',
         'mothers_occupation', 'fathers_occupation', 'displaced', 'educational_special_needs',
@@ -28,28 +36,19 @@ class FileParser:
     
     @staticmethod
     def parse_file(file: FileStorage) -> tuple[list[dict], str]:
-        """
-        Parse uploaded file and extract student data.
-        
-        Args:
-            file: FileStorage object from Flask request
-            
-        Returns:
-            tuple: (list of student records, error message if any)
-            
-        Raises:
-            ValueError: If file format is not supported or required columns are missing
-        """
+        # ... (rest of the method, remains unchanged)
+        # ...
         try:
             # Validate file extension
             filename = file.filename.lower()
             file_ext = None
-            for ext in FileParser.SUPPORTED_FORMATS:
+            for ext in FileParser.SUPPORTED_FORMATS: # Line 47
                 if filename.endswith(ext):
                     file_ext = ext
                     break
             
             if not file_ext:
+                # Accessing FileParser.SUPPORTED_FORMATS is now safe
                 raise ValueError(f"Unsupported file format. Supported formats: {', '.join(FileParser.SUPPORTED_FORMATS)}")
             
             # Read file based on extension
@@ -84,9 +83,11 @@ class FileParser:
                     }
                 except KeyError as e:
                     logger.error(f"FileParser Error: Missing required primary key in row {idx + 1}: {e}")
+                    # Re-raise to stop processing a bad file
                     raise
                 except ValueError as e:
                     logger.error(f"FileParser Error: Type mismatch for primary key (year/semester) in row {idx + 1}: {e}")
+                    # Re-raise to stop processing a bad file
                     raise
                 
                 # Extract features
@@ -114,7 +115,7 @@ class FileParser:
 
 
 class DataValidator:
-    # ... (rest of the class definition remains the same)
+    # ... (remains the same)
 
     REQUIRED_FIELDS = {
         'marital_status', 'application_mode', 'course',
@@ -164,8 +165,58 @@ class DataValidator:
 
 
 class DuplicateChecker:
-    # ... (No critical changes needed here, as duplicate detection seems fine)
-    pass
+    # ... (remains the same)
+    
+    @staticmethod
+    def filter_duplicates(new_records: list, existing_records: list) -> tuple[list, list]:
+        """
+        Filter out duplicate records from new batch.
+        
+        Args:
+            new_records: List of new student records
+            existing_records: List of existing student records
+            
+        Returns:
+            tuple: (unique_records, duplicate_records)
+        """
+        unique_records = []
+        duplicate_records = []
+        
+        # Build a set of existing keys for O(1) lookups
+        existing_keys = set()
+        for record in existing_records:
+            try:
+                # Ensure fields exist before accessing
+                name = record.get('name')
+                year = record.get('year')
+                semester = record.get('semester')
+                
+                if name is not None and year is not None and semester is not None:
+                    key = (str(name).lower().strip(), year, semester)
+                    existing_keys.add(key)
+                else:
+                    logger.warning(f"Malformed existing record skipped in duplicate check (missing key): {record}")
+            except Exception:
+                logger.warning(f"Malformed existing record skipped in duplicate check: {record}")
+                
+        
+        for record in new_records:
+            try:
+                record_key = (record['name'].lower().strip(), record['year'], record['semester'])
+                
+                # Check against existing records and newly added unique records
+                if record_key in existing_keys:
+                    duplicate_records.append(record)
+                    logger.debug(f"DuplicateChecker: Found duplicate record: {record_key}")
+                else:
+                    unique_records.append(record)
+                    # Add to existing_keys to prevent duplicates within the new batch itself
+                    existing_keys.add(record_key) 
+                    logger.debug(f"DuplicateChecker: Added unique record: {record_key}")
+            except (KeyError, AttributeError, TypeError):
+                 logger.error(f"Malformed new record skipped during key creation: {record}")
+                 
+        return unique_records, duplicate_records
 
 
 def format_error_response(message: str, details: str = None) -> dict:
