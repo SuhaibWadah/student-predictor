@@ -65,7 +65,7 @@ class FileParser:
             
             # Validate required columns exist
             df_columns = set(col.lower() for col in df.columns)
-            missing_columns = FileParser.REQUIRED_COLUMNS - df_columns
+            missing_columns = FileParser.REQUIRED_FIELDS - df_columns
             
             if missing_columns:
                 raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
@@ -85,7 +85,7 @@ class FileParser:
                 
                 # Extract additional features (all columns except required ones)
                 for col in df.columns:
-                    if col not in FileParser.REQUIRED_COLUMNS:
+                    if col not in FileParser.REQUIRED_FIELDS:
                         # Try to convert to numeric if possible
                         try:
                             record['features'][col] = float(row[col])
