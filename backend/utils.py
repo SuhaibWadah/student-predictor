@@ -21,7 +21,7 @@ class FileParser:
     SUPPORTED_FORMATS = {'.csv', '.xlsx', '.xls'}
     
     # Required columns for batch processing
-   REQUIRED_FIELDS = [
+    REQUIRED_FIELDS = [
         'name', 'year', 'semester', 'marital_status', 'application_mode', 'course',
         'previous_qualification_grade', 'mothers_qualification', 'fathers_qualification',
         'mothers_occupation', 'fathers_occupation', 'displaced', 'educational_special_needs',
