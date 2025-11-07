@@ -156,7 +156,7 @@ Generate a personalized improvement plan for the following student:
 
 ---
 **STRICT INSTRUCTIONS:**
-Provide the plan using **Markdown headings (##)** for each of the five requested sections below. Be extremely concise. The entire output must be less or close to than 880 tokens.
+Provide the plan using **Markdown headings (##)** for each of the five requested sections below. Be extremely concise. The entire output must be less or close to than 500 tokens.
 
 ## 1. Analysis of Current Performance (Max 3 concise sentences)
 ## 2. Key Areas for Improvement (List 2-3 bullet points)
