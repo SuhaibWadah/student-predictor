@@ -89,7 +89,7 @@ class OpenRouterAPI:
         prompt = self._prepare_plan_prompt(student_name, year, semester, features, predicted_score)
 
         payload = {
-            'model': 'anthropic/claude-sonnet-4.5',
+            'model': 'openai/gpt-3.5-turbo',
             'messages': [
                 {'role': 'system', 'content': 'You are an educational advisor helping students improve performance. Provide actionable improvement plans.'},
                 {'role': 'user', 'content': prompt}
