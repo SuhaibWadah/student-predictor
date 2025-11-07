@@ -58,11 +58,11 @@ class OpenRouterAPI:
     Interface for OpenRouter.ai LLM API.
     Generates improvement plans based on predictions.
     """
-    key = "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"
     OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
     def __init__(self):
-        self.api_key = self.key
+        self.api_key = key = os.getenv("OPENROUTER_API_KEY")
+
         if not self.api_key:
             logger.warning("OPENROUTER_API_KEY not set. Plan generation will fail.")
 
