@@ -8,6 +8,8 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 import traceback
+# 🌟 Import pandas to use pd.isna() robustly (assuming pandas is available in this context) 🌟
+import pandas as pd 
 
 from models import db, Student, PredictionLog
 from utils import FileParser, DataValidator, DuplicateChecker, format_error_response, format_success_response
@@ -77,27 +79,49 @@ HF_INPUT_ORDER = {
 def prepare_hf_features(input_data: dict) -> tuple[dict, str | None]:
     """
     Ensures input data is correctly ordered and converted to float for the HF model.
+    CRITICAL FIX: Imputes 'gdp' if missing/NaN and replaces Python 'NaN' with a 
+    valid float in the original 'input_data' dictionary to prevent JSON errors 
+    when saving to the database.
+    
     Returns: (ordered_dict_of_36_features, error_message)
     """
     ordered_features = {}
+    
+    # Define the default GDP value
+    DEFAULT_GDP = 17.4
+
     for i in range(36):
         key = HF_INPUT_ORDER.get(i)
         if not key:
             return {}, f"Internal error: Missing mapping for input parameter {i}."
         
         value = input_data.get(key)
-        if value is None:
-            # Check for a different casing/naming convention fallback if needed
-            value = input_data.get(key.replace('_', '')) 
+        
+        # 1. Robustly check for null/NaN values
+        # pd.isna() handles None, np.nan, and pandas nulls robustly.
+        is_null_or_nan = pd.isna(value)
 
-        if value is None:
-            return {}, f"Missing required feature: {key}"
-
+        # 2. Imputation/Fallback Logic
+        if is_null_or_nan:
+            if key == 'gdp':
+                value = DEFAULT_GDP
+                logger.warning(f"Feature '{key}' was missing/null. Imputing with default value: {DEFAULT_GDP}")
+            else:
+                 # Non-GDP critical features must be present
+                 return {}, f"Missing required feature: {key}"
+        
+        # 3. Ensure final value is a float for the model
         try:
-            # All 36 inputs must be floats or integers (handled as floats in Python)
-            ordered_features[key] = float(value)
+            float_value = float(value)
+            ordered_features[key] = float_value
         except (ValueError, TypeError):
-            return {}, f"Invalid data type for feature {key}. Expected numeric, got {value}."
+            return {}, f"Invalid data type for feature {key}. Expected numeric, got {value!r}."
+
+        # 4. CRITICAL: Update the original input_data dictionary for database saving
+        # This replaces any original Python 'NaN' value (which JSON cannot handle) 
+        # with the numeric float value. This is especially important for 'gdp'.
+        if key in input_data:
+             input_data[key] = ordered_features[key]
     
     return ordered_features, None
 
@@ -111,43 +135,42 @@ def predict_single():
         if not data:
             return jsonify({"error": "No input data provided"}), 400
 
-        # 1. Map and validate the input data order
+        # 1. Map and validate the input data order (gdp is corrected inside this call)
         hf_features, validation_error = prepare_hf_features(data)
         if validation_error:
             return jsonify({"error": validation_error}), 400
 
-        # 2. Call your prediction function (using the correctly ordered features)
+        # 2. Call your prediction function
         predicted_score, error = hf_api.predict(hf_features)
         if error:
             return jsonify({"error": error}), 500
 
-        # Note: OpenRouter API uses the original, named 'data' for prompt context
+        # 3. Generate improvement plan
         improvement_plan, plan_error = openrouter_api.generate_improvement_plan(
             student_name=data.get('student_name', 'Unknown'),
             year=data.get('year', 1),
             semester=data.get('semester', 1),
-            features=data, # Use the original named data for the LLM prompt
+            features=data, # Use the corrected 'data' for the LLM prompt context
             predicted_score=predicted_score
         )
         
         if plan_error:
-            # Handle plan generation failure gracefully
             logger.warning(f"Plan generation failed for single prediction: {plan_error}")
             improvement_plan = "Improvement plan generation temporarily unavailable."
 
-        # 🌟 FIX 1: Store prediction in database (Added Missing Logic) 🌟
+        # 4. Store prediction in database
+        # 'data' now contains the corrected numeric 'gdp' value (not NaN) for JSON serialization.
         student = Student(
             name=data.get('student_name', 'Single Prediction'),
             year=data.get('year', 1),
             semester=data.get('semester', 1),
-            features=data,
+            features=data, # Use 'data' which now has the corrected 'gdp'
             predicted_performance=predicted_score, # Categorical string
             improvement_plan=improvement_plan
         )
         db.session.add(student)
         db.session.commit() # Commit the transaction to save the record!
         
-        # 🌟 FIX 2: Corrected response structure to include student_id for frontend 🌟
         response = {
             "predicted_performance": predicted_score,
             "improvement_plan": improvement_plan,
@@ -156,9 +179,7 @@ def predict_single():
         return jsonify({"data": response}), 200
 
     except Exception as e:
-        # Log full stack trace
         logger.error("Error in /predict-single:\n" + traceback.format_exc())
-        # Rollback the session if an error occurred before commit
         db.session.rollback() 
         return jsonify({"error": str(e)}), 500
 
@@ -223,6 +244,7 @@ def predict_batch():
         for idx, record in enumerate(unique_records):
             try:
                 # 1. Map and validate the input data order for HF
+                # CRITICAL: record['features'] is modified in place to fix 'gdp' (NaN -> 17.4)
                 hf_features, validation_error = prepare_hf_features(record['features'])
                 if validation_error:
                     raise ValueError(validation_error)
@@ -243,7 +265,7 @@ def predict_batch():
                     record['name'],
                     record['year'],
                     record['semester'],
-                    record['features'],
+                    record['features'], # Use the corrected features dictionary
                     predicted_score
                 )
                 
@@ -252,6 +274,7 @@ def predict_batch():
                     improvement_plan = "Plan generation temporarily unavailable."
                 
                 # 4. Store in database
+                # record['features'] is now safe for database JSON storage.
                 student = Student(
                     name=record['name'],
                     year=record['year'],
@@ -307,6 +330,8 @@ def predict_batch():
         
     except Exception as e:
         logger.error(f"Error in predict_batch: {str(e)}")
+        # Rollback in case of a fatal error before final commit
+        db.session.rollback() 
         return jsonify(format_error_response("Internal server error", str(e))), 500
 
 
