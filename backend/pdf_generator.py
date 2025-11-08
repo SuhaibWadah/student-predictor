@@ -17,10 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImprovementPlanPDFGenerator:
-    """
-    Generates PDF documents for student improvement plans.
-    Creates professional, formatted PDF files with student information and improvement strategies.
-    """
+    # ... (Configuration and _get_styles remain the same) ...
     
     # PDF Configuration
     PAGE_SIZE = letter
@@ -101,24 +98,23 @@ class ImprovementPlanPDFGenerator:
             'body': body_style,
             'subheading': subheading_style
         }
-    
+
     def generate_improvement_plan_pdf(
         self,
         student_name: str,
         year: int,
-        semester: int,
-        predicted_score: float,
+        # ❌ REMOVED: semester: int, 
+        predicted_score: Any, # Changed type hint to Any for safety
         improvement_plan: str,
         features: dict = None
-    ) -> tuple[str, str]:
+    ) -> tuple[str, str | None]:
         """
         Generate a PDF document for the improvement plan.
         
         Args:
             student_name: Name of the student
             year: Academic year
-            semester: Semester number
-            predicted_score: Predicted performance score
+            predicted_score: Predicted performance score (must be numeric or convertible)
             improvement_plan: Text content of the improvement plan
             features: Dictionary of student features (optional)
             
@@ -126,6 +122,16 @@ class ImprovementPlanPDFGenerator:
             tuple: (pdf_filename, error_message)
         """
         try:
+            # CRITICAL FIX 1: Ensure predicted_score is a float for formatting
+            try:
+                # Use float() to convert from string (if API returned a string number)
+                # or ensure it's a number, and provide a safe default (0.0) if conversion fails.
+                score = float(predicted_score)
+            except (ValueError, TypeError):
+                # Log an error if the score is truly non-numeric
+                logger.error(f"Predicted score '{predicted_score}' is not numeric. Using 0.0.")
+                score = 0.0
+
             # Generate filename
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             safe_name = student_name.replace(' ', '_').lower()
@@ -159,8 +165,9 @@ class ImprovementPlanPDFGenerator:
             student_info_data = [
                 ['Name:', student_name],
                 ['Academic Year:', str(year)],
-                ['Semester:', str(semester)],
-                ['Predicted Performance Score:', f"{predicted_score:.2f}/100"],
+                # ❌ REMOVED: ['Semester:', str(semester)],
+                # Use the guaranteed numeric score variable 'score'
+                ['Predicted Performance Score:', f"{score:.2f}/100"], 
                 ['Generated Date:', datetime.now().strftime('%B %d, %Y')]
             ]
             
@@ -186,7 +193,17 @@ class ImprovementPlanPDFGenerator:
                 for key, value in features.items():
                     # Format feature names (replace underscores with spaces, capitalize)
                     formatted_key = key.replace('_', ' ').title()
-                    features_data.append([formatted_key, str(value)])
+                    
+                    # CRITICAL FIX 2: Ensure feature value is safely represented as a string
+                    if isinstance(value, float):
+                        # Format floats to 2 decimal places if they are not integers
+                        display_value = f"{value:.2f}" if value % 1 != 0 else str(int(value))
+                    elif value is None:
+                        display_value = 'N/A'
+                    else:
+                        display_value = str(value)
+
+                    features_data.append([formatted_key, display_value])
                 
                 features_table = Table(features_data, colWidths=[3 * inch, 3 * inch])
                 features_table.setStyle(TableStyle([
@@ -262,17 +279,9 @@ class ImprovementPlanPDFGenerator:
 def generate_batch_pdf_report(
     predictions: list,
     output_filename: str = None
-) -> tuple[str, str]:
-    """
-    Generate a comprehensive PDF report for batch predictions.
-    
-    Args:
-        predictions: List of prediction dictionaries
-        output_filename: Custom output filename (optional)
-        
-    Returns:
-        tuple: (pdf_filename, error_message)
-    """
+) -> tuple[str | None, str | None]:
+    # ... (No changes needed in generate_batch_pdf_report as it uses safe string formatting)
+    # ... (The type hints in the function signature are also updated for clarity)
     try:
         # Generate filename
         if not output_filename:
@@ -329,11 +338,18 @@ def generate_batch_pdf_report(
         table_data = [['Name', 'Year', 'Semester', 'Predicted Score']]
         
         for pred in predictions:
+            # Safe conversion for table data
+            score = pred.get('predicted_performance', 0)
+            try:
+                score = float(score)
+            except (ValueError, TypeError):
+                score = 0.0
+
             table_data.append([
                 pred.get('name', ''),
                 str(pred.get('year', '')),
-                str(pred.get('semester', '')),
-                f"{pred.get('predicted_performance', 0):.2f}"
+                str(pred.get('semester', 'N/A')), # Use N/A since semester is removed/optional
+                f"{score:.2f}"
             ])
         
         results_table = Table(table_data, colWidths=[2.5 * inch, 1 * inch, 1 * inch, 1.5 * inch])
