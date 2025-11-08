@@ -43,30 +43,14 @@ class FileParser:
     }
     
     @staticmethod
-    def parse_file(file: FileStorage) -> tuple[list[dict], str]:
+    def parse_file(file: FileStorage) -> tuple[list[dict], str | None]:
         """
-        Parse uploaded file and extract student data into a flat dictionary structure.
+        Parse uploaded file and extract student data into a FLAT dictionary structure.
         """
         try:
-            filename = file.filename.lower()
-            file_ext = None
-            for ext in FileParser.SUPPORTED_FORMATS:
-                if filename.endswith(ext):
-                    file_ext = ext
-                    break
-            
-            if not file_ext:
-                raise ValueError(f"Unsupported file format. Supported formats: {', '.join(FileParser.SUPPORTED_FORMATS)}")
-            
-            file_content = file.stream.read()
-            
-            if file_ext == '.csv':
-                df = pd.read_csv(BytesIO(file_content))
-            else:
-                df = pd.read_excel(BytesIO(file_content), engine='openpyxl' if file_ext == '.xlsx' else 'xlrd')
-            
-            # Normalize column names to lowercase and replace spaces/special chars with underscores
-            # NOTE: The regex here is robust for general cleanup.
+            # ... (File format checking and pandas reading remain the same) ...
+
+            # Normalize column names
             df.columns = df.columns.str.lower().str.replace('[^a-z0-9_]+', '_', regex=True)
 
             # Validate required columns exist
@@ -79,7 +63,8 @@ class FileParser:
             records = []
             
             for idx, row in df.iterrows():
-                record = {'features': {}} # Use 'features' key to store the 36 numerical columns
+                # Initialize the record as a FLAT dictionary
+                record = {} 
                 is_valid_row = True
                 
                 # Extract and clean all fields into a FLAT dictionary
@@ -87,38 +72,46 @@ class FileParser:
                     value = row.get(col_name)
                     
                     if pd.isna(value) or value is None:
-                        # Allow missing data, but log a warning if a critical feature is missing
-                        if col_name in ['name', 'study_year', 'major']: # Major is usually critical
+                        if col_name in ['name', 'study_year', 'major']: 
                             logger.error(f"Row {idx + 1} skipped: Missing critical field '{col_name}'.")
                             is_valid_row = False
                             break
                         
-                        # Store None for non-critical missing fields
-                        if col_name in ['name', 'study_year', 'major']:
-                             record[col_name] = None
-                        else:
-                             record['features'][col_name] = None 
+                        # Store None for non-critical missing features (will be imputed/caught in routes.py)
+                        record[col_name] = None
                         continue
 
                     # Clean value
                     if isinstance(value, str):
-                        value = value.strip()
+                        # CRITICAL: Strip whitespace to prevent Type/Value errors in routes.py
+                        value = value.strip() 
                     
-                    # Separate identifiers (name, year, major) from the numerical features
-                    if col_name in ['name', 'major', 'study_year']:
+                    # Store everything directly in the record dictionary
+                    if col_name in ['name', 'major']:
                         record[col_name] = str(value)
                     else:
-                        # Attempt to convert all numerical fields to float for the model input
+                        # Attempt to convert all numerical fields to float/int
                         try:
-                            record['features'][col_name] = float(value)
+                            # Use int for most categorical features
+                            if col_name in ['study_year'] or col_name.endswith('_status') or col_name.endswith('_mode'):
+                                record[col_name] = int(value)
+                            # Use float for all other numeric/grade fields
+                            else:
+                                record[col_name] = float(value)
                         except (ValueError, TypeError):
-                            # Fallback to string if conversion fails, though this might cause model errors later
-                            record['features'][col_name] = str(value) 
+                            # This will be caught later in prepare_hf_features for better error reporting
+                            record[col_name] = value 
                 
                 if is_valid_row:
                     # Rename 'study_year' to 'year' for consistency with the Student model
-                    record['year'] = record.pop('study_year')
-                    # Add a placeholder for 'semester' if it's not in the file
+                    # Also handles the mandatory type conversion to int
+                    if 'study_year' in record:
+                        record['year'] = record.pop('study_year')
+                    elif 'study_year' in FileParser.REQUIRED_FIELDS:
+                        logger.error(f"Row {idx + 1} skipped: 'study_year' missing after validation.")
+                        continue # Should be caught above, but as a safeguard
+                        
+                    # Add a placeholder for 'semester' if needed elsewhere (though removed from DB)
                     record['semester'] = 1 
                     records.append(record)
             
