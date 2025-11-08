@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -85,6 +86,7 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -222,8 +224,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .alert {
@@ -416,6 +423,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -433,14 +441,43 @@
         <div id="single" class="tab-content active">
             <div class="card">
                 <h2>Single Student Prediction</h2>
-                <p style="color: #666; margin-bottom: 20px;">Enter student information to get a performance prediction and personalized improvement plan.</p>
+                <p style="color: #666; margin-bottom: 20px;">Enter student information to get a performance prediction
+                    and personalized improvement plan.</p>
 
                 <div id="singleAlert" class="alert"></div>
 
                 <form id="singleForm">
-                    <!-- Personal Information Section -->
                     <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Personal Information</h3>
-                    
+
+                    <label for="name">Student Name (Letters/Spaces Only):</label>
+                    <input type="text" id="name" name="name" required pattern="[A-Za-z\s]+"
+                        title="Name must contain only letters and spaces.">
+
+                    <label for="year">Study Year:</label>
+                    <select id="year" name="year" required>
+                        <option value="" disabled selected>Select Year</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+
+                    <label for="major">Major:</label>
+                    <select id="major" name="major" required>
+                        <option value="" disabled selected>Select Major</option>
+                        <option value="IT">IT</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="AI & Data Science">AI & Data Science</option>
+                        <option value="Cyber Security">Cyber Security</option>
+                        <option value="Civil Engineering">Civil Engineering</option>
+                        <option value="Fuel & Gas Engineering">Fuel & Gas Engineering</option>
+                        <option value="Interior Desing">Interior Design</option>
+                        <option value="Multimeida">Multimedia</option>
+                        <option value="International Business Management">International Business Management</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Accounting">Accounting</option>
+                    </select>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="maritalStatus">Marital Status *</label>
@@ -466,7 +503,8 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="ageAtEnrollment">Age at Enrollment *</label>
-                            <input type="number" id="ageAtEnrollment" name="ageAtEnrollment" min="18" max="60" required placeholder="e.g., 20">
+                            <input type="number" id="ageAtEnrollment" name="ageAtEnrollment" min="18" max="60" required
+                                placeholder="e.g., 20">
                         </div>
 
                         <div class="form-group">
@@ -505,7 +543,8 @@
 
                         <div class="form-group">
                             <label for="previousQualificationGrade">Previous Qualification Grade (0-100) *</label>
-                            <input type="number" id="previousQualificationGrade" name="previousQualificationGrade" min="0" max="100" required placeholder="e.g., 85">
+                            <input type="number" id="previousQualificationGrade" name="previousQualificationGrade"
+                                min="0" max="100" required placeholder="e.g., 85">
                             <p class="info-text">Your grade will be converted to the model's scale (0-200)</p>
                         </div>
                     </div>
@@ -625,18 +664,21 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="sem1Enrolled">Number of Subjects Taken (4-7) *</label>
-                            <input type="number" id="sem1Enrolled" name="sem1Enrolled" min="4" max="7" required placeholder="e.g., 6">
+                            <input type="number" id="sem1Enrolled" name="sem1Enrolled" min="4" max="7" required
+                                placeholder="e.g., 6">
                         </div>
 
                         <div class="form-group">
                             <label for="sem1Approved">Number of Subjects Passed *</label>
-                            <input type="number" id="sem1Approved" name="sem1Approved" min="0" max="7" required placeholder="e.g., 5">
+                            <input type="number" id="sem1Approved" name="sem1Approved" min="0" max="7" required
+                                placeholder="e.g., 5">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="sem1Grade">GPA for Semester 1 *</label>
-                        <input type="number" id="sem1Grade" name="sem1Grade" min="0" max="4" step="0.1" required placeholder="e.g., 3.5">
+                        <input type="number" id="sem1Grade" name="sem1Grade" min="0" max="4" step="0.1" required
+                            placeholder="e.g., 3.5">
                     </div>
 
                     <!-- Semester 2 Section -->
@@ -645,18 +687,21 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="sem2Enrolled">Number of Subjects Taken (4-7) *</label>
-                            <input type="number" id="sem2Enrolled" name="sem2Enrolled" min="4" max="7" required placeholder="e.g., 6">
+                            <input type="number" id="sem2Enrolled" name="sem2Enrolled" min="4" max="7" required
+                                placeholder="e.g., 6">
                         </div>
 
                         <div class="form-group">
                             <label for="sem2Approved">Number of Subjects Passed *</label>
-                            <input type="number" id="sem2Approved" name="sem2Approved" min="0" max="7" required placeholder="e.g., 5">
+                            <input type="number" id="sem2Approved" name="sem2Approved" min="0" max="7" required
+                                placeholder="e.g., 5">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="sem2Grade">GPA for Semester 2 *</label>
-                        <input type="number" id="sem2Grade" name="sem2Grade" min="0" max="4" step="0.1" required placeholder="e.g., 3.5">
+                        <input type="number" id="sem2Grade" name="sem2Grade" min="0" max="4" step="0.1" required
+                            placeholder="e.g., 3.5">
                     </div>
 
                     <div class="button-group">
@@ -681,7 +726,8 @@
         <div id="batch" class="tab-content">
             <div class="card">
                 <h2>Batch Student Predictions</h2>
-                <p style="color: #666; margin-bottom: 20px;">Upload a CSV or Excel file with multiple students to process predictions in bulk.</p>
+                <p style="color: #666; margin-bottom: 20px;">Upload a CSV or Excel file with multiple students to
+                    process predictions in bulk.</p>
 
                 <div id="batchAlert" class="alert"></div>
 
@@ -689,10 +735,12 @@
                     <div class="form-group">
                         <label>Upload File (CSV or Excel) *</label>
                         <div id="fileUploadArea" class="file-upload-area">
-                            <input type="file" id="batchFile" name="file" accept=".csv,.xlsx,.xls" style="display: none;">
+                            <input type="file" id="batchFile" name="file" accept=".csv,.xlsx,.xls"
+                                style="display: none;">
                             <p><strong>Click to select</strong> or drag and drop your file here</p>
                             <p style="font-size: 0.9em; margin-top: 10px;">Supported formats: CSV, XLSX, XLS</p>
-                            <p style="font-size: 0.85em; color: #999; margin-top: 5px;">File should contain all the required columns</p>
+                            <p style="font-size: 0.85em; color: #999; margin-top: 5px;">File should contain all the
+                                required columns</p>
                         </div>
                     </div>
 
@@ -735,85 +783,76 @@
         </div>
     </div>
 
-    <script>
+   <script>
         // Configuration
         var API_BASE_URL = '/api';
 
-        // Feature mapping configuration
-        var featureMappings = {
-            // These are the fixed values that don't need user input
-            'daytime_evening_attendance': 1,  // Always daytime
-            'previous_qualification': 12,  // Always 12
-            'nationality': 11,  // Always 11
-            'curricular_units_1st_sem_credited': 30,  // Always 0
-            'curricular_units_1st_sem_evaluations': null,  // Will be set to enrolled value
-            'curricular_units_1st_sem_without_evaluations': 0,  // Always 0
-            'curricular_units_2nd_sem_credited': 30,  // Always 0
-            'curricular_units_2nd_sem_evaluations': null,  // Will be set to enrolled value
-            'curricular_units_2nd_sem_without_evaluations': 0,  // Always 0
-            'unemployment_rate': 17.10,  // Always 17.10
-            'inflation_rate': 25.8,  // Always 25.8
-            'gdp': 17.40  // Always 17.40
-        };
+        // NOTE: Removed redundant 'featureMappings' as the values are hardcoded in the submit handler.
+        // It's cleaner to handle hardcoded values only in one place (the submit handler).
 
         // Tab switching
-        document.querySelectorAll('.tab-button').forEach(function(button) {
-            button.addEventListener('click', function() {
+        document.querySelectorAll('.tab-button').forEach(function (button) {
+            button.addEventListener('click', function () {
                 var tabName = this.getAttribute('data-tab');
                 switchTab(tabName);
             });
         });
-        // Markdown to HTML conversion helper
-function formatMarkdown(markdownText) {
-    if (!markdownText) return '';
-    let html = markdownText;
+        
+        // Markdown to HTML conversion helper (Retained as is)
+        function formatMarkdown(markdownText) {
+            if (!markdownText) return '';
+            let html = markdownText;
 
-    // 1. Convert Headers (H2 -> H4, H3 -> H5)
-    html = html.replace(/^## (.*$)/gim, '<h4>$1</h4>');
-    html = html.replace(/^### (.*$)/gim, '<h5>$1</h5>');
+            // 1. Convert Headers (H2 -> H4, H3 -> H5)
+            html = html.replace(/^## (.*$)/gim, '<h4>$1</h4>');
+            html = html.replace(/^### (.*$)/gim, '<h5>$1</h5>');
 
-    // 2. Wrap list items (<li>)
-    // NOTE: This needs to run before list wrapping and handles the '- ' or '* ' format
-    html = html.replace(/^(?:-|\*) (.*$)/gim, '<li>$1</li>');
+            // 2. Wrap list items (<li>)
+            // NOTE: This needs to run before list wrapping and handles the '- ' or '* ' format
+            html = html.replace(/^(?:-|\*) (.*$)/gim, '<li>$1</li>');
 
-    // 3. Bold (**)
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // 4. Wrap blocks of <li> in <ul> tags
-    // This is a simple parser to wrap list items into an unordered list structure.
-    let inList = false;
-    const lines = html.split('<br>').map(line => line.trim());
-    html = lines.map(line => {
-        if (line.startsWith('<li>') && !inList) {
-            inList = true;
-            return '<ul style="list-style-type: disc; margin-left: 20px;">' + line;
-        } else if (line.startsWith('<li>')) {
-            return line;
-        } else if (inList) {
-            inList = false;
-            return '</ul>' + line;
-        } else {
-            return line;
+            // 3. Bold (**)
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // 4. Wrap blocks of <li> in <ul> tags
+            // This is a simple parser to wrap list items into an unordered list structure.
+            let inList = false;
+            // Changed split/join method to correctly handle the previous replacements
+            const lines = html.split('\n').map(line => line.trim());
+            html = lines.map(line => {
+                // If line contains no content but was separated by a line break, just return it
+                if (line === '') return '<br>'; 
+                
+                if (line.startsWith('<li>') && !inList) {
+                    inList = true;
+                    return '<ul style="list-style-type: disc; margin-left: 20px;">' + line;
+                } else if (line.startsWith('<li>')) {
+                    return line;
+                } else if (inList) {
+                    inList = false;
+                    return '</ul>' + line;
+                } else {
+                    return line;
+                }
+            }).join('\n'); // Rejoin with line breaks
+            if (inList) {
+                html += '</ul>'; // Close list if it was open at the end
+            }
+
+            // 5. Handle remaining line breaks for paragraphs outside of lists
+            html = html.replace(/\n\n/g, '<p></p>').replace(/\n/g, '<br>');
+
+            return html;
         }
-    }).join('<br>');
-    if (inList) {
-        html += '</ul>'; // Close list if it was open at the end
-    }
-
-    // 5. Handle remaining line breaks for paragraphs outside of lists
-    html = html.replace(/\n\n/g, '<p></p>').replace(/\n/g, '<br>');
-    
-    return html;
-}
 
         function switchTab(tabName) {
             // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(function(tab) {
+            document.querySelectorAll('.tab-content').forEach(function (tab) {
                 tab.classList.remove('active');
             });
 
             // Remove active class from all buttons
-            document.querySelectorAll('.tab-button').forEach(function(btn) {
+            document.querySelectorAll('.tab-button').forEach(function (btn) {
                 btn.classList.remove('active');
             });
 
@@ -821,7 +860,9 @@ function formatMarkdown(markdownText) {
             document.getElementById(tabName).classList.add('active');
 
             // Add active class to clicked button
-            event.target.classList.add('active');
+            // NOTE: You need the 'event' passed to the listener, or use 'this'
+            // For simplicity, let's assume 'event' is accessible or you update the listener
+            document.querySelector('.tab-button[data-tab="' + tabName + '"]').classList.add('active');
 
             // Load history when history tab is clicked
             if (tabName === 'history') {
@@ -830,25 +871,32 @@ function formatMarkdown(markdownText) {
         }
 
         // Single prediction form submission
-        document.getElementById('singleForm').addEventListener('submit', function(e) {
+        document.getElementById('singleForm').addEventListener('submit', function (e) {
             e.preventDefault();
 
             var formData = new FormData(this);
             var data = {
-                // Personal Information
+                // ✨ ADDED: Personal Information Fields
+                'name': formData.get('name'), 
+                'year': parseInt(formData.get('year')), 
+                'major': formData.get('major'), 
+
+                // Personal Information (Features)
                 'marital_status': parseInt(formData.get('maritalStatus')),
                 'application_mode': parseInt(formData.get('applicationMode')),
                 'application_order': 1,  // Always 1
                 'course': parseInt(formData.get('course')),
                 'daytime_evening_attendance': 1,  // Always 1
                 'previous_qualification': 12,  // Always 12
-                'previous_qualification_grade': parseInt(formData.get('previousQualificationGrade')) * 2,  // Convert 0-100 to 0-200
+                // Convert 0-100 to 0-200
+                'previous_qualification_grade': parseInt(formData.get('previousQualificationGrade')) * 2, 
                 'nationality': 11,  // Always 11
                 'mothers_qualification': parseInt(formData.get('mothersQualification')),
                 'fathers_qualification': parseInt(formData.get('fathersQualification')),
                 'mothers_occupation': parseInt(formData.get('mothersOccupation')),
                 'fathers_occupation': parseInt(formData.get('fathersOccupation')),
-                'admission_grade': parseInt(formData.get('previousQualificationGrade')) * 2,  // Same as previous qualification grade
+                // Same as previous qualification grade
+                'admission_grade': parseInt(formData.get('previousQualificationGrade')) * 2, 
                 'displaced': parseInt(formData.get('displaced')),
                 'educational_special_needs': parseInt(formData.get('educationalSpecialNeeds')),
                 'debtor': parseInt(formData.get('debtor')),
@@ -857,6 +905,7 @@ function formatMarkdown(markdownText) {
                 'scholarship_holder': parseInt(formData.get('scholarshipHolder')),
                 'age_at_enrollment': parseInt(formData.get('ageAtEnrollment')),
                 'international': parseInt(formData.get('international')),
+                
                 // Semester 1
                 'curricular_units_1st_sem_credited': 0,  // Always 0
                 'curricular_units_1st_sem_enrolled': parseInt(formData.get('sem1Enrolled')),
@@ -864,6 +913,7 @@ function formatMarkdown(markdownText) {
                 'curricular_units_1st_sem_approved': parseInt(formData.get('sem1Approved')),
                 'curricular_units_1st_sem_grade': parseFloat(formData.get('sem1Grade')),
                 'curricular_units_1st_sem_without_evaluations': 0,  // Always 0
+                
                 // Semester 2
                 'curricular_units_2nd_sem_credited': 0,  // Always 0
                 'curricular_units_2nd_sem_enrolled': parseInt(formData.get('sem2Enrolled')),
@@ -871,6 +921,7 @@ function formatMarkdown(markdownText) {
                 'curricular_units_2nd_sem_approved': parseInt(formData.get('sem2Approved')),
                 'curricular_units_2nd_sem_grade': parseFloat(formData.get('sem2Grade')),
                 'curricular_units_2nd_sem_without_evaluations': 0,  // Always 0
+                
                 // Economic indicators
                 'unemployment_rate': 17.10,  // Always 17.10
                 'inflation_rate': 25.8,  // Always 25.8
@@ -880,7 +931,7 @@ function formatMarkdown(markdownText) {
             predictSingle(data);
         });
 
-        // Predict single student
+        // Predict single student (Retained as is)
         function predictSingle(data) {
             var loading = document.getElementById('singleLoading');
             var results = document.getElementById('singleResults');
@@ -897,105 +948,106 @@ function formatMarkdown(markdownText) {
                 },
                 body: JSON.stringify(data)
             })
-            .then(function(response) {
-                return response.json().then(function(json) {
-                    return { status: response.status, data: json };
-                });
-            })
-            .then(function(result) {
-                loading.classList.remove('active');
+                .then(function (response) {
+                    return response.json().then(function (json) {
+                        return { status: response.status, data: json };
+                    });
+                })
+                .then(function (result) {
+                    loading.classList.remove('active');
 
-                if (result.status === 200) {
-                    displaySingleResult(result.data.data);
-                    results.classList.add('active');
-                    showAlert('singleAlert', 'success', 'Prediction completed successfully!');
-                } else {
-                    showAlert('singleAlert', 'error', result.data.error || 'Prediction failed');
-                }
-            })
-            .catch(function(error) {
-                loading.classList.remove('active');
-                showAlert('singleAlert', 'error', 'Error: ' + error.message);
-            });
+                    if (result.status === 200) {
+                        displaySingleResult(result.data.data);
+                        results.classList.add('active');
+                        showAlert('singleAlert', 'success', 'Prediction completed successfully!');
+                    } else {
+                        showAlert('singleAlert', 'error', result.data.error || 'Prediction failed');
+                    }
+                })
+                .catch(function (error) {
+                    loading.classList.remove('active');
+                    showAlert('singleAlert', 'error', 'Error: ' + error.message);
+                });
         }
 
-        // Display single prediction result
-    function displaySingleResult(data) {
-    var content = document.getElementById('singleResultContent');
-    
-    const predictedPerformance = data.predicted_performance;
-    let displayScore;
+        // Display single prediction result (Retained as is)
+        function displaySingleResult(data) {
+            var content = document.getElementById('singleResultContent');
 
-    // 🌟 FIX 1: Handle Categorical Score (String) vs. Numeric Score 🌟
-    if (!isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
-        // If it's a valid number (e.g., if you change your model later), format it
-        displayScore = parseFloat(predictedPerformance).toFixed(2) + '%';
-    } else {
-        // If it's the categorical string ('Success', 'Failure'), display it directly
-        displayScore = predictedPerformance; 
-    }
+            const predictedPerformance = data.predicted_performance;
+            let displayScore;
 
-    // 🌟 FIX 2: Use the Markdown Formatter for Improvement Plan 🌟
-    const formattedPlan = formatMarkdown(data.improvement_plan);
+            // Handle Categorical Score (String) vs. Numeric Score
+            if (!isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
+                displayScore = parseFloat(predictedPerformance).toFixed(2) + '%';
+            } else {
+                displayScore = predictedPerformance;
+            }
 
-    content.innerHTML = '<div class="result-card">' +
-                        '<h3>Prediction Result</h3>' +
-                        '<p><strong>Predicted Performance Score:</strong></p>' +
-                        '<div class="score-display">' + displayScore + '</div>' + 
-                        '<p><strong>Improvement Plan:</strong></p>' +
-                        // Use a <div> for the formatted HTML content
-                        '<div style="line-height: 1.6;">' + formattedPlan + '</div>' +
-                        '</div>';
-}
+            // Use the Markdown Formatter for Improvement Plan
+            const formattedPlan = formatMarkdown(data.improvement_plan);
 
-        // File upload handling
+            content.innerHTML = '<div class="result-card">' +
+                '<h3>Prediction Result for ' + data.name + ' (Year ' + data.year + ')</h3>' +
+                '<p><strong>Predicted Performance Score:</strong></p>' +
+                '<div class="score-display">' + displayScore + '</div>' +
+                '<p><strong>Improvement Plan:</strong></p>' +
+                // Use a <div> for the formatted HTML content
+                '<div style="line-height: 1.6;">' + formattedPlan + '</div>' +
+                '<p style="margin-top: 15px;"><a href="' + API_BASE_URL + '/student/' + data.student_id + '/pdf" target="_blank" class="download-button">Download Plan as PDF</a></p>' +
+                '</div>';
+        }
+
+        // File upload handling (Retained as is)
         var fileUploadArea = document.getElementById('fileUploadArea');
         var batchFile = document.getElementById('batchFile');
 
-        fileUploadArea.addEventListener('click', function() {
+        fileUploadArea.addEventListener('click', function () {
             batchFile.click();
         });
-        batchFile.addEventListener('change', function(e) {
-    if (this.files && this.files.length > 0) {
-        fileUploadArea.classList.add('file-selected');
-        fileUploadArea.querySelector('p').textContent = 'Selected file: ' + this.files[0].name;
-    }
-});
+        batchFile.addEventListener('change', function (e) {
+            if (this.files && this.files.length > 0) {
+                fileUploadArea.classList.add('file-selected');
+                fileUploadArea.querySelector('p').textContent = 'Selected file: ' + this.files[0].name;
+            }
+        });
 
-        fileUploadArea.addEventListener('dragover', function(e) {
+        fileUploadArea.addEventListener('dragover', function (e) {
             e.preventDefault();
             this.classList.add('dragover');
         });
 
-        fileUploadArea.addEventListener('dragleave', function() {
+        fileUploadArea.addEventListener('dragleave', function () {
             this.classList.remove('dragover');
         });
 
-        fileUploadArea.addEventListener('drop', function(e) {
-    e.preventDefault();
-    this.classList.remove('dragover');
-
-    const droppedFiles = e.dataTransfer.files;
-    if (droppedFiles.length > 0) {
-        batchFile.files = droppedFiles; // This line is optional — not all browsers allow it
-        fileUploadArea.classList.add('file-selected');
-        fileUploadArea.querySelector('p').textContent = 'Selected file: ' + droppedFiles[0].name;
-    }
-});
-
-        // Batch prediction form submission
-        document.getElementById('batchForm').addEventListener('submit', function(e) {
+        fileUploadArea.addEventListener('drop', function (e) {
             e.preventDefault();
+            this.classList.remove('dragover');
 
-            const file = batchFile.files[0] || currentFile;
-if (!file) {
-    showAlert('batchAlert', 'error', 'Please select or drop a file');
-    return;
-}
-predictBatch(file);
+            const droppedFiles = e.dataTransfer.files;
+            if (droppedFiles.length > 0) {
+                batchFile.files = droppedFiles; // This line is optional — not all browsers allow it
+                fileUploadArea.classList.add('file-selected');
+                fileUploadArea.querySelector('p').textContent = 'Selected file: ' + droppedFiles[0].name;
+            }
         });
 
-        // Predict batch
+        // Batch prediction form submission (Retained as is)
+        document.getElementById('batchForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // NOTE: 'currentFile' should be defined somewhere if you intend to use it, 
+            // otherwise just use batchFile.files[0]
+            const file = batchFile.files[0]; 
+            if (!file) {
+                showAlert('batchAlert', 'error', 'Please select or drop a file');
+                return;
+            }
+            predictBatch(file);
+        });
+
+        // Predict batch (Retained as is)
         function predictBatch(file) {
             var loading = document.getElementById('batchLoading');
             var results = document.getElementById('batchResults');
@@ -1012,111 +1064,119 @@ predictBatch(file);
                 method: 'POST',
                 body: formData
             })
-            .then(function(response) {
-                return response.json().then(function(json) {
-                    return { status: response.status, data: json };
-                });
-            })
-            .then(function(result) {
-                loading.classList.remove('active');
+                .then(function (response) {
+                    return response.json().then(function (json) {
+                        return { status: response.status, data: json };
+                    });
+                })
+                .then(function (result) {
+                    loading.classList.remove('active');
 
-                if (result.status === 200) {
-                    displayBatchResults(result.data.data);
-                    results.classList.add('active');
-                    showAlert('batchAlert', 'success', 'Batch processing completed!');
-                } else {
-                    showAlert('batchAlert', 'error', result.data.error || 'Batch processing failed');
-                }
-            })
-            .catch(function(error) {
-                loading.classList.remove('active');
-                showAlert('batchAlert', 'error', 'Error: ' + error.message);
-            });
+                    if (result.status === 200) {
+                        displayBatchResults(result.data.data);
+                        results.classList.add('active');
+                        showAlert('batchAlert', 'success', 'Batch processing completed!');
+                    } else {
+                        showAlert('batchAlert', 'error', result.data.error || 'Batch processing failed');
+                    }
+                })
+                .catch(function (error) {
+                    loading.classList.remove('active');
+                    showAlert('batchAlert', 'error', 'Error: ' + error.message);
+                });
         }
 
-        // Display batch results
-       function displayBatchResults(data) {
-    var summary = document.getElementById('batchSummary');
-    var content = document.getElementById('batchResultContent');
+        // Display batch results (Retained as is)
+        function displayBatchResults(data) {
+            var summary = document.getElementById('batchSummary');
+            var content = document.getElementById('batchResultContent');
 
-    // --- SUMMARY STATS (Optional: Update if needed) ---
-    // This section is commented out for brevity, but you should ensure it works.
-    summary.innerHTML = '<div class="summary-stats-inner">' +
-                        '<p>Total Records: <strong>' + data.total_records + '</strong></p>' +
-                        '<p>Successful Predictions: <strong style="color: green;">' + data.successful + '</strong></p>' +
-                        '<p>Failed Records: <strong style="color: red;">' + data.failed + '</strong></p>' +
-                        '<p>Duplicates Found: <strong style="color: orange;">' + data.duplicates + '</strong></p>' +
-                        '</div>';
-    
-    if (data.predictions.length === 0) {
-        content.innerHTML = '<p style="color:#666; margin-top:20px;">No successful predictions to display.</p>';
-        return;
-    }
+            // --- SUMMARY STATS (Optional: Update if needed) ---
+            summary.innerHTML = '<div class="summary-stats-inner">' +
+                '<p>Total Records: <strong>' + data.total_records + '</strong></p>' +
+                '<p>Successful Predictions: <strong style="color: green;">' + data.successful + '</strong></p>' +
+                '<p>Failed Records: <strong style="color: red;">' + data.failed + '</strong></p>' +
+                '<p>Duplicates Found: <strong style="color: orange;">' + data.duplicates + '</strong></p>' +
+                '</div>';
 
-    // Determine feature keys for dynamic columns (Use the first prediction as a template)
-    // NOTE: The features object is nested inside the prediction object in batch mode.
-    const firstFeatures = data.predictions[0].features || {}; 
-    const featureKeys = Object.keys(firstFeatures);
+            if (data.predictions.length === 0) {
+                content.innerHTML = '<p style="color:#666; margin-top:20px;">No successful predictions to display.</p>';
+                return;
+            }
 
-    // 1. Build Table Header (<thead>)
-    let headerHTML = '<tr>' +
-                     '<th>Name</th>' +
-                     '<th>Year</th>' +
-                     '<th>Predicted Score</th>' +
-                     // Dynamically add headers for all features
-                     featureKeys.map(key => '<th>' + key.replace(/_/g, ' ') + '</th>').join('') +
-                     '<th>Plan Summary</th>' +
-                     '</tr>';
+            // Determine feature keys for dynamic columns (Use the first prediction as a template)
+            // The API response for batch should ideally include 'name', 'year', 'major' and the 'features' dict.
+            const firstFeatures = data.predictions[0].features || {};
+            
+            // Define the starting keys explicitly (name, year, major, predicted_performance)
+            // Then append the feature keys from the prediction response
+            const featureKeys = Object.keys(firstFeatures).filter(key => key !== 'name' && key !== 'year' && key !== 'major'); 
 
-    // 2. Build Table Body (<tbody>)
-    let bodyHTML = '';
-    data.predictions.forEach(function(pred) {
-        // Truncate the plan for the summary column
-        var planSummary = pred.improvement_plan.substring(0, 100) + '...';
-        
-        // Robust Score Display (from previous fix)
-        const predScore = pred.predicted_performance;
-        const displayScore = (!isNaN(parseFloat(predScore)) && isFinite(parseFloat(predScore))) 
-                             ? parseFloat(predScore).toFixed(2) + '%' 
-                             : predScore;
+            // 1. Build Table Header (<thead>)
+            let headerHTML = '<tr>' +
+                '<th>Name</th>' +
+                '<th>Year</th>' +
+                '<th>Major</th>' + // ✨ ADDED: Major column
+                '<th>Predicted Score</th>' +
+                // Dynamically add headers for all features
+                featureKeys.map(key => '<th>' + key.replace(/_/g, ' ') + '</th>').join('') +
+                '<th>Details</th>' + // Changed 'Plan Summary' to 'Details'
+                '</tr>';
 
-        // Start the row with Name, Year, and Predicted Score
-        let rowHTML = '<tr>' +
-                      '<td>' + pred.name + '</td>' +
-                      '<td>' + pred.year + '</td>' +
-                      '<td><strong>' + displayScore + '</strong></td>';
+            // 2. Build Table Body (<tbody>)
+            let bodyHTML = '';
+            data.predictions.forEach(function (pred) {
+                
+                // Robust Score Display (from previous fix)
+                const predScore = pred.predicted_performance;
+                const displayScore = (!isNaN(parseFloat(predScore)) && isFinite(parseFloat(predScore)))
+                    ? parseFloat(predScore).toFixed(2) + '%'
+                    : predScore;
 
-        // Add cells for all features dynamically
-        featureKeys.forEach(key => {
-            // Use the nested 'features' object from the prediction response
-            const featureValue = pred.features ? pred.features[key] : 'N/A';
-            rowHTML += '<td>' + (featureValue !== undefined ? featureValue : 'N/A') + '</td>';
-        });
+                // Start the row with Name, Year, Major, and Predicted Score
+                let rowHTML = '<tr>' +
+                    '<td>' + pred.name + '</td>' +
+                    '<td>' + pred.year + '</td>' +
+                    '<td>' + pred.major + '</td>' + // ✨ ADDED: Major cell
+                    '<td><strong>' + displayScore + '</strong></td>';
 
-        // Add the Plan Summary column
-        rowHTML += '<td>' + planSummary + '</td>' +
-                   '</tr>';
-        
-        bodyHTML += rowHTML;
-    });
+                // Add cells for all features dynamically
+                featureKeys.forEach(key => {
+                    // Use the nested 'features' object from the prediction response
+                    const featureValue = pred.features ? pred.features[key] : 'N/A';
+                    // Check for null/NaN before displaying
+                    const displayValue = (featureValue === null || isNaN(featureValue)) ? 'N/A' : featureValue;
+                    rowHTML += '<td>' + displayValue + '</td>';
+                });
 
-    // 3. Assemble the full table
-    var tableHTML = '<table class="results-table">' +
-                    '<thead>' + headerHTML + '</thead>' +
-                    '<tbody>' + bodyHTML + '</tbody>' +
-                    '</table>';
+                // Add the Details column (link to student detail)
+                rowHTML += '<td><a href="#history" onclick="switchTab(\'history\'); document.getElementById(\'history-search\').value=\'' + pred.name + '\'; loadHistory();">View</a></td>' +
+                    '</tr>';
 
-    // Display error details if present
-    if (data.failed > 0) {
-        // You should add code here to display the error list (data.errors)
-        tableHTML += '<h4 style="color: red; margin-top: 20px;">' + data.failed + ' Record(s) Failed to Process</h4>';
-        // Add detailed error list here for better user feedback
-    }
+                bodyHTML += rowHTML;
+            });
 
-    content.innerHTML = tableHTML;
-}
+            // 3. Assemble the full table
+            var tableHTML = '<table class="results-table">' +
+                '<thead>' + headerHTML + '</thead>' +
+                '<tbody>' + bodyHTML + '</tbody>' +
+                '</table>';
 
-        // Load history
+            // Display error details if present
+            if (data.failed > 0) {
+                // Display detailed error list here for better user feedback
+                tableHTML += '<h4 style="color: red; margin-top: 20px;">' + data.failed + ' Record(s) Failed to Process</h4>';
+                tableHTML += '<ul>';
+                data.errors.forEach(err => {
+                    tableHTML += `<li>Record ${err.record_index} (${err.name}): ${err.error}</li>`;
+                });
+                tableHTML += '</ul>';
+            }
+
+            content.innerHTML = tableHTML;
+        }
+
+        // Load history (Retained as is)
         function loadHistory() {
             var loading = document.getElementById('historyLoading');
             var results = document.getElementById('historyResults');
@@ -1127,57 +1187,88 @@ predictBatch(file);
             alert.classList.remove('active');
 
             fetch(API_BASE_URL + '/history?limit=50')
-            .then(function(response) {
-                return response.json();
-            })
-            .then(function(result) {
-                loading.classList.remove('active');
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (result) {
+                    loading.classList.remove('active');
 
-                if (result.data && result.data.length > 0) {
-                    displayHistory(result.data);
-                    results.classList.add('active');
-                } else {
-                    showAlert('historyAlert', 'info', 'No prediction history found');
-                }
-            })
-            .catch(function(error) {
-                loading.classList.remove('active');
-                showAlert('historyAlert', 'error', 'Error: ' + error.message);
-            });
+                    if (result.data && result.data.length > 0) {
+                        displayHistory(result.data);
+                        results.classList.add('active');
+                    } else {
+                        showAlert('historyAlert', 'info', 'No prediction history found');
+                    }
+                })
+                .catch(function (error) {
+                    loading.classList.remove('active');
+                    showAlert('historyAlert', 'error', 'Error: ' + error.message);
+                });
         }
 
         // Display history
         function displayHistory(data) {
-    var content = document.getElementById('historyContent');
-    var tableHTML = '<table class="results-table"><thead><tr>' +
-                   '<th>Predicted Score</th><th>Date</th>' +
-                   '</tr></thead><tbody>';
+            var content = document.getElementById('historyContent');
+            var tableHTML = '<table class="results-table"><thead><tr>' +
+                '<th>Name</th><th>Year</th><th>Major</th><th>Predicted Score</th><th>Date</th><th>Details</th>' + // ✨ ADDED: Major and Details column
+                '</tr></thead><tbody>';
 
-    data.forEach(function(record) {
-        var date = new Date(record.created_at).toLocaleDateString();
-        
-        // 🌟 FIX 4: Robust Score Display for History Table 🌟
-        const recordScore = record.predicted_performance;
-        const displayScore = (!isNaN(parseFloat(recordScore)) && isFinite(parseFloat(recordScore)))
-                             ? parseFloat(recordScore).toFixed(2) + '%' 
-                             : recordScore;
-        
-        tableHTML += '<tr>' +
+            data.forEach(function (record) {
+                var date = new Date(record.created_at).toLocaleDateString();
+
+                // Robust Score Display for History Table
+                const recordScore = record.predicted_performance;
+                const displayScore = (!isNaN(parseFloat(recordScore)) && isFinite(parseFloat(recordScore)))
+                    ? parseFloat(recordScore).toFixed(2) + '%'
+                    : recordScore;
+
+                tableHTML += '<tr>' +
+                    '<td>' + record.name + '</td>' +
+                    '<td>' + record.year + '</td>' +
+                    '<td>' + record.major + '</td>' + // ✨ ADDED: Major cell
                     '<td><strong>' + displayScore + '</strong></td>' +
                     '<td>' + date + '</td>' +
+                    // Link to view the single record details
+                    '<td><button onclick="viewStudentDetail(' + record.id + ')" class="btn-sm">View</button></td>' + 
                     '</tr>';
-    });
+            });
 
-    tableHTML += '</tbody></table>';
-    content.innerHTML = tableHTML;
-}
+            tableHTML += '</tbody></table>';
+            content.innerHTML = tableHTML;
+        }
 
-        // Show alert
+        // New function to handle viewing student details from history
+        function viewStudentDetail(studentId) {
+             fetch(API_BASE_URL + '/student/' + studentId)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        // Switch to single tab to display result (can reuse displaySingleResult)
+                        switchTab('single');
+                        
+                        // NOTE: You need a dedicated section/modal in the single tab 
+                        // to show a historical result without overwriting the form.
+                        // For now, let's just show it in the 'singleResults' div, 
+                        // but you should adjust the HTML to handle this better.
+                        displaySingleResult(result.data); 
+                        document.getElementById('singleResults').classList.add('active');
+                        document.getElementById('singleAlert').classList.remove('active');
+                        document.getElementById('singleForm').style.display = 'none'; // Hide the form temporarily
+                    } else {
+                        showAlert('historyAlert', 'error', 'Failed to load student details: ' + (result.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    showAlert('historyAlert', 'error', 'Network error loading details: ' + error.message);
+                });
+        }
+
+        // Show alert (Retained as is)
         function showAlert(elementId, type, message) {
             var alert = document.getElementById(elementId);
             alert.className = 'alert active ' + type;
             alert.textContent = message;
         }
-    </script>
+</script>
 </body>
 </html>

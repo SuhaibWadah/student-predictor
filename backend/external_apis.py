@@ -17,9 +17,8 @@ class HuggingFaceAPI:
     HF_SPACE_ID = "suhaibW/student-performance-predictor"
     API_NAME = "/predict" 
 
-    # 🌟 FIX 2: Complete and correct 36-feature list from routes.py mapping 🌟
+    # 🌟 FEATURE_ORDER remains the same 🌟
     FEATURE_ORDER = [
-        # This list MUST match the exact order expected by the Gradio space (param_0 to param_35).
         'marital_status',
         'application_mode',
         'application_order', 
@@ -85,12 +84,8 @@ class HuggingFaceAPI:
             if key == 'gdp' and (pd.isna(value) or value is None):
                 fallback_gdp_value = 17.4
                 value = fallback_gdp_value
-                logger.warning(f"Feature 'gdp' was missing/null. Imputing with fallback value: {fallback_gdp_value}")
-            # --- END FIX ---
-            
+                logger.warning(f"Feature 'gdp' was missing/null. Imputing with fallback value: {fallback_gdp_value}")        
             logger.debug(f"Feature {key}: {value!r}")
-
-            # Use pandas isna() for robust check against NaN/None
             if pd.isna(value) or value is None:
                 missing_keys.append(key)
                 
@@ -125,7 +120,6 @@ class HuggingFaceAPI:
 
 
 class OpenRouterAPI:
-    # ... (Rest of the class remains the same)
     """
     Interface for OpenRouter.ai LLM API.
     Generates improvement plans based on predictions.
@@ -149,7 +143,7 @@ class OpenRouterAPI:
         self,
         student_name: str,
         year: int,
-        semester: int,
+        # ❌ REMOVED: semester: int, 
         features: dict[str, Any],
         predicted_score: Any,
         timeout: int = 30
@@ -158,7 +152,8 @@ class OpenRouterAPI:
         if not self.api_key:
             return None, "OpenRouter API key not configured"
 
-        prompt = self._prepare_plan_prompt(student_name, year, semester, features, predicted_score)
+        # NOTE: Removed semester from _prepare_plan_prompt call
+        prompt = self._prepare_plan_prompt(student_name, year, features, predicted_score)
 
         payload = {
             'model': 'openai/gpt-3.5-turbo',
@@ -205,13 +200,12 @@ class OpenRouterAPI:
     def _prepare_plan_prompt(
         student_name: str,
         year: int,
-        semester: int,
+        # ❌ REMOVED: semester: int, 
         features: dict[str, Any],
         predicted_score: Any
     ) -> str:
         """Prepares the detailed prompt for the LLM."""
         
-        # Handle categorical score as a safe string
         score_display = str(predicted_score)
         
         features_text = "\n".join([f"- {k}: {v}" for k, v in features.items()])
@@ -220,7 +214,6 @@ Generate a personalized improvement plan for the following student:
 
 **Student:** {student_name}
 **Year:** {year}
-**Semester:** {semester}
 **Predicted Performance:** {score_display}
 
 **Relevant Features:**
@@ -235,6 +228,5 @@ Provide the plan using **Markdown headings (##)** for each of the five requested
 ## 3. Specific Action Items (Provide 3-5 numbered, detailed steps)
 ## 4. Timeline for Implementation (Suggest specific timeframes: e.g., 'Weeks 1-4')
 ## 5. Success Metrics (List 2-3 measurable indicators)
-
 ---
 """.strip()

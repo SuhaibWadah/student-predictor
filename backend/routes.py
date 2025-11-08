@@ -13,7 +13,6 @@ import pandas as pd
 import os
 from typing import Any
 
-# 🌟 CRITICAL FIX: Only import Student, remove PredictionLog
 from models import db, Student 
 from utils import FileParser, DataValidator, DuplicateChecker, format_error_response, format_success_response
 # Placeholder imports for external services (assuming they exist in your project)
@@ -36,9 +35,7 @@ ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
 
 
 # 🌟 CRITICAL MAPPING FOR HUGGING FACE API 🌟
-# This dictionary maps the user-friendly keys (from your JSON/DB) to the 
-# POSITIONAL ORDER (param_0 to param_35) required by your Gradio Space model.
-# NOTE: YOU MUST verify this order against your actual Gradio Space inputs!
+# (The HF_INPUT_ORDER dictionary remains unchanged as it maps to the 36 features)
 HF_INPUT_ORDER = {
     0: 'marital_status',
     1: 'application_mode',
@@ -47,7 +44,7 @@ HF_INPUT_ORDER = {
     4: 'daytime_evening_attendance',
     5: 'previous_qualification',
     6: 'previous_qualification_grade',
-    7: 'nationality', # CORRECTED: Mapped to the correct key in data
+    7: 'nationality',
     8: 'mothers_qualification',
     9: 'fathers_qualification',
     10: 'mothers_occupation',
@@ -92,9 +89,6 @@ def prepare_hf_features(input_data: dict) -> tuple[dict, str | None]:
     
     # Define the default GDP value
     DEFAULT_GDP = 17.4 # Placeholder value
-    # Placeholder values for prediction audit (replace with actual model output)
-    GLOBAL_PREDICTED_SCORE = "Success"
-    GLOBAL_CONFIDENCE_SCORE = 0.95
     
     for i in range(36):
         key = HF_INPUT_ORDER.get(i)
@@ -122,8 +116,8 @@ def prepare_hf_features(input_data: dict) -> tuple[dict, str | None]:
             return {}, f"Invalid data type for feature {key}. Expected numeric, got {value!r}."
 
         # CRITICAL: Update the original input_data dictionary for database saving
-        if key in input_data:
-             input_data[key] = ordered_features[key]
+        # This replaces the original file's value with the cleaned float/imputed value
+        input_data[key] = ordered_features[key]
     
     return ordered_features, None
 
@@ -137,32 +131,37 @@ def predict_single():
         if not data:
             return jsonify({"error": "No input data provided"}), 400
 
+        # --- ✨ START: New name/year/major extraction and validation ---
+        student_name = data.get('name', 'Unknown')
+        student_year = data.get('year') # Use 'year' field directly from front-end
+        student_major = data.get('major', 'N/A')
+        
+        if not student_year or student_year not in [1, 2, 3, 4]:
+             return jsonify({"error": "Invalid or missing 'year'. Must be 1, 2, 3, or 4."}), 400
+        
+        # Ensure the name stored is the user-friendly name
+        data_to_store_name = student_name 
+        # --- END: New name/year/major extraction ---
+
+
         # 1. Map and validate the input data order (gdp is corrected inside this call)
+        # Note: 'data' is modified in place to clean the feature values
         hf_features, validation_error = prepare_hf_features(data)
         if validation_error:
             return jsonify({"error": validation_error}), 400
         
-        start_time = datetime.utcnow() # Track API time
-        
         # 2. Call your prediction function
-        # ASSUMPTION: hf_api.predict returns (predicted_class_string, confidence_score_float, error)
-        # If your API only returns one score, you must adapt this.
-        # For simplicity, we assume it returns the predicted class string (e.g., 'Success').
         predicted_score, error = hf_api.predict(hf_features)
         
         if error:
             return jsonify({"error": error}), 500
 
-        # Placeholder values for audit fields
-        confidence_score = data.get('confidence_score', 0.95) # Replace with actual model output
-        model_version = "HF_SPACE_V1"
-
         # 3. Generate improvement plan
+        # NOTE: Removed 'semester' usage and confidence/version as they are no longer stored
         improvement_plan, plan_error = openrouter_api.generate_improvement_plan(
-            student_name=data.get('name', 'Unknown'),
-            year=data.get('study_year', 1), # Using study_year from the data
-            semester=data.get('semester', 1), # Assuming a default semester value if not provided
-            features=data, 
+            student_name=student_name,
+            year=student_year,
+            features=data, # Use the cleaned 'data'
             predicted_score=predicted_score
         )
         
@@ -172,14 +171,13 @@ def predict_single():
 
         # 4. Store prediction in database
         student = Student(
-            name=data.get('name', 'Single Prediction'),
-            year=data.get('study_year', 1),
-            semester=data.get('semester', 1), # Use data from request or default
-            features=data, # Use 'data' which now has the corrected 'gdp'
+            name=data_to_store_name, # Use the cleaned student name
+            year=student_year,
+            major=student_major, # Store major
+            features=data, 
             predicted_performance=predicted_score, 
             improvement_plan=improvement_plan,
-            prediction_model_version=model_version,
-            confidence_score=confidence_score
+            # ❌ REMOVED: prediction_model_version, confidence_score, semester
         )
         db.session.add(student)
         db.session.commit() 
@@ -216,7 +214,7 @@ def predict_batch():
         if file_size > MAX_FILE_SIZE:
             return jsonify(format_error_response(f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB")), 400
         
-        # Parse file
+        # Parse file (records contains name, year, major, and features)
         records, parse_error = FileParser.parse_file(file)
         
         if parse_error:
@@ -227,15 +225,11 @@ def predict_batch():
         
         logger.info(f"Batch processing started. Total records: {len(records)}")
         
-        # NO PredictionLog created here (removed)
-        
-        # Get existing records for duplicate checking
-        # Assuming the 'study_year' from the file maps to the 'year' field in the DB
+        # Get existing records for duplicate checking (checking name and year)
         existing_students = db.session.query(Student).all()
         existing_records = [{'name': s.name, 'study_year': s.year, 'major': s.major} for s in existing_students]
         
         # Filter duplicates
-        # NOTE: DuplicateChecker assumes 'study_year' is used, aligning with your original code's requirement.
         unique_records, duplicate_records = DuplicateChecker.filter_duplicates(records, existing_records)
         
         logger.info(f"Unique records: {len(unique_records)}, Duplicates: {len(duplicate_records)}")
@@ -246,15 +240,14 @@ def predict_batch():
         successful_count = 0
         
         for idx, record in enumerate(unique_records):
+            student_name = record.get('name')
+            student_year = record.get('year') # Uses 'year' from utils.py's parsing
+            student_major = record.get('major')
+            
             try:
-                # IMPORTANT: Map 'study_year' from record to 'year' in the DB model
-                student_name = record.get('name')
-                student_year = record.get('study_year')
-                student_major = record.get('major')
-                
-                # The remaining keys are in record, we map them as features
+                # The 'record' dictionary contains the name/year/major AND the features
                 # CRITICAL: record is modified in place to fix 'gdp' (NaN -> 17.4)
-                hf_features, validation_error = prepare_hf_features(record) # Pass the whole record dictionary
+                hf_features, validation_error = prepare_hf_features(record)
                 
                 if validation_error:
                     raise ValueError(f"Record {student_name}: {validation_error}")
@@ -266,16 +259,10 @@ def predict_batch():
                     errors.append({'record_index': idx, 'name': student_name, 'error': f"Prediction failed: {hf_error}"})
                     continue
                 
-                # Placeholder values for audit fields
-                confidence_score = record.get('confidence_score', 0.90) # Replace with actual model output
-                model_version = "BATCH_RUN_V1"
-
                 # 3. Generate improvement plan
                 improvement_plan, or_error = openrouter_api.generate_improvement_plan(
                     student_name,
                     student_year,
-                    # Assuming a default semester value if not in the file
-                    record.get('semester', 1), 
                     record, # Use the corrected features dictionary
                     predicted_score
                 )
@@ -288,15 +275,14 @@ def predict_batch():
                 student = Student(
                     name=student_name,
                     year=student_year,
-                    semester=record.get('semester', 1), # Assuming semester is 1 if not provided
+                    major=student_major, # Store major
                     features=record, # record is now safe for JSON storage
                     predicted_performance=predicted_score,
                     improvement_plan=improvement_plan,
-                    prediction_model_version=model_version,
-                    confidence_score=confidence_score
+                    # ❌ REMOVED: prediction_model_version, confidence_score, semester
                 )
                 db.session.add(student)
-                db.session.flush()  
+                db.session.flush()  # Use flush to get the ID
                 
                 predictions.append({
                     'student_id': student.id,
@@ -312,8 +298,6 @@ def predict_batch():
         
         # Commit all successful records
         db.session.commit()
-        
-        # NO PredictionLog update here (removed)
         
         logger.info(f"Batch processing completed. Successful: {successful_count}, Failed: {len(errors)}")
         
@@ -395,10 +379,10 @@ def download_student_pdf(student_id):
             return jsonify(format_error_response("Student not found")), 404
         
         # Generate PDF
+        # NOTE: Removed semester from parameters
         pdf_filename, error = pdf_generator.generate_improvement_plan_pdf(
             student.name,
             student.year,
-            student.semester,
             student.predicted_performance,
             student.improvement_plan,
             student.features if isinstance(student.features, dict) else {}
