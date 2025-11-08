@@ -6,7 +6,7 @@ Student model for logging.
 
 import logging
 from datetime import datetime
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_from_directory # ✨ Changed send_file to send_from_directory
 from werkzeug.utils import secure_filename
 import traceback
 import pandas as pd 
@@ -27,7 +27,7 @@ api_bp = Blueprint('api', __name__)
 # Initialize external API clients (placeholders)
 hf_api = HuggingFaceAPI()
 openrouter_api = OpenRouterAPI()
-pdf_generator = ImprovementPlanPDFGenerator()
+pdf_generator = ImprovementPlanPDFGenerator() # Initialize here, output_dir='pdfs'
 
 # Configuration
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
@@ -371,6 +371,9 @@ def get_student(student_id):
 def download_student_pdf(student_id):
     """
     Endpoint to download a student's improvement plan as PDF.
+    
+    This function generates the PDF and returns a URL to the file, which the front-end
+    can then navigate to or fetch for the actual file download.
     """
     try:
         student = db.session.query(Student).filter_by(id=student_id).first()
@@ -379,13 +382,13 @@ def download_student_pdf(student_id):
             return jsonify(format_error_response("Student not found")), 404
         
         # Generate PDF
-        # NOTE: Removed semester from parameters
         pdf_filename, error = pdf_generator.generate_improvement_plan_pdf(
             student.name,
             student.year,
-            student.predicted_performance,
-            student.improvement_plan,
-            student.features if isinstance(student.features, dict) else {}
+            # ✨ Ensure parameters match the updated pdf_generator signature
+            predicted_score=student.predicted_performance, 
+            improvement_plan=student.improvement_plan,
+            features=student.features if isinstance(student.features, dict) else {}
         )
         
         if error:
@@ -393,6 +396,7 @@ def download_student_pdf(student_id):
             return jsonify(format_error_response("PDF generation failed", error)), 500
         
         # Return file path for download
+        # CRITICAL: The download URL must use the blueprint prefix '/api'
         return jsonify(format_success_response({
             'filename': pdf_filename,
             'download_url': f'/api/download/{pdf_filename}' 
@@ -407,25 +411,32 @@ def download_student_pdf(student_id):
 def download_file(filename):
     """
     Endpoint to download generated PDF files.
+    This route streams the file directly to the client.
     """
     try:
-        # Security: Validate filename to prevent directory traversal
-        if '..' in filename or '/' in filename or '\\' in filename:
-            return jsonify(format_error_response("Invalid filename")), 400
+        # 1. Use secure_filename to clean the input path component
+        secure_name = secure_filename(filename)
+        if secure_name != filename:
+            logger.warning(f"Rejected insecure filename attempt: {filename}")
+            return jsonify(format_error_response("Invalid filename format")), 400
         
-        # CRITICAL: This path must be correct for Render/local FS
-        pdf_path = os.path.join(os.getcwd(), 'pdfs', filename) 
+        # 2. Get the *absolute* path to the PDF directory from the generator instance
+        # This is typically 'pdfs' relative to the app's root
+        pdf_directory = pdf_generator.output_dir
         
-        if not os.path.exists(pdf_path):
-            return jsonify(format_error_response("File not found")), 404
-        
-        return send_file(
-            pdf_path,
-            mimetype='application/pdf',
+        # 3. Use Flask's send_from_directory for secure and robust file serving
+        return send_from_directory(
+            directory=pdf_directory,
+            path=secure_name,
             as_attachment=True,
-            download_name=filename
+            download_name=secure_name
         )
         
+    # CRITICAL: If send_from_directory fails (e.g., file not found), handle it gracefully
+    except FileNotFoundError:
+        logger.error(f"Download file not found: {filename}")
+        return jsonify(format_error_response("File not found", f"The requested file '{filename}' does not exist.")), 404
     except Exception as e:
-        logger.error(f"Error in download_file: {str(e)}")
+        # The generic exception handler that was causing the cryptic JSON response
+        logger.error(f"Error in download_file:\n" + traceback.format_exc())
         return jsonify(format_error_response("Internal server error", str(e))), 500
