@@ -23,7 +23,6 @@ class FileParser:
     REQUIRED_FIELDS = {
         'name', 'study_year', 'major', # New/renamed identifiers
         
-        # 36 Core Features (Matching model.py column names)
         'marital_status', 'application_mode', 'application_order', 
         'course', 'daytime_evening_attendance', 'previous_qualification', 'previous_qualification_grade', 
         'nacionality', 'mothers_qualification', 'fathers_qualification', 'mothers_occupation', 
