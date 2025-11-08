@@ -25,7 +25,8 @@ class FileParser:
         
         'marital_status', 'application_mode', 'application_order', 
         'course', 'daytime_evening_attendance', 'previous_qualification', 'previous_qualification_grade', 
-        'nacionality', 'mothers_qualification', 'fathers_qualification', 'mothers_occupation', 
+        'nationality', # <-- CORRECTION: Changed 'nacionality' to 'nationality'
+        'mothers_qualification', 'fathers_qualification', 'mothers_occupation', 
         'fathers_occupation', 'admission_grade', 'displaced', 'educational_special_needs',
         'debtor', 'tuition_fees_up_to_date', 'gender', 'scholarship_holder',
         'age_at_enrollment', 'international',
@@ -65,6 +66,7 @@ class FileParser:
                 df = pd.read_excel(BytesIO(file_content), engine='openpyxl' if file_ext == '.xlsx' else 'xlrd')
             
             # Normalize column names to lowercase and replace spaces/special chars with underscores
+            # NOTE: The regex here is robust for general cleanup.
             df.columns = df.columns.str.lower().str.replace('[^a-z0-9_]+', '_', regex=True)
 
             # Validate required columns exist
@@ -77,37 +79,47 @@ class FileParser:
             records = []
             
             for idx, row in df.iterrows():
-                record = {}
+                record = {'features': {}} # Use 'features' key to store the 36 numerical columns
                 is_valid_row = True
                 
                 # Extract and clean all fields into a FLAT dictionary
                 for col_name in FileParser.REQUIRED_FIELDS:
-                    value = row.get(col_name) # Use .get() in case the original column was missing (already checked above, but safe)
+                    value = row.get(col_name)
                     
                     if pd.isna(value) or value is None:
                         # Allow missing data, but log a warning if a critical feature is missing
-                        if col_name in ['name', 'study_year']:
+                        if col_name in ['name', 'study_year', 'major']: # Major is usually critical
                             logger.error(f"Row {idx + 1} skipped: Missing critical field '{col_name}'.")
                             is_valid_row = False
                             break
-                        record[col_name] = None # Store None for nullable DB columns
+                        
+                        # Store None for non-critical missing fields
+                        if col_name in ['name', 'study_year', 'major']:
+                             record[col_name] = None
+                        else:
+                             record['features'][col_name] = None 
                         continue
 
                     # Clean value
                     if isinstance(value, str):
                         value = value.strip()
                     
-                    # Try to convert to float/int based on general data expectation
-                    try:
-                        # Attempt to convert all numeric fields to float for consistency
-                        if col_name not in ['name', 'major', 'study_year']:
-                            record[col_name] = float(value)
-                        else:
-                            record[col_name] = str(value)
-                    except (ValueError, TypeError):
+                    # Separate identifiers (name, year, major) from the numerical features
+                    if col_name in ['name', 'major', 'study_year']:
                         record[col_name] = str(value)
+                    else:
+                        # Attempt to convert all numerical fields to float for the model input
+                        try:
+                            record['features'][col_name] = float(value)
+                        except (ValueError, TypeError):
+                            # Fallback to string if conversion fails, though this might cause model errors later
+                            record['features'][col_name] = str(value) 
                 
                 if is_valid_row:
+                    # Rename 'study_year' to 'year' for consistency with the Student model
+                    record['year'] = record.pop('study_year')
+                    # Add a placeholder for 'semester' if it's not in the file
+                    record['semester'] = 1 
                     records.append(record)
             
             logger.info(f"Successfully parsed {len(records)} valid records from {filename}")
@@ -123,12 +135,9 @@ class DataValidator:
     """
     Utility class for validating student data against expected types and ranges.
     """
-    
     # Data Validator logic depends on the specific checks you need, but since all 
     # data is now numeric/string in the flat records, the initial checks are handled 
     # by FileParser.
-    
-    # ... (Rest of DataValidator remains the same or needs customization) ...
     pass
 
 
@@ -140,24 +149,26 @@ class DuplicateChecker:
     def filter_duplicates(new_records: list[dict], existing_records: list[dict]) -> tuple[list[dict], list[dict]]:
         """
         Filters out new records that are duplicates of existing records based on
-        Name and Study Year.
+        Name and Study Year/Year.
         """
-        # Create a set of existing (name, study_year) tuples for fast lookup
+        # Create a set of existing (name, year) tuples for fast lookup
         existing_keys = set()
         for rec in existing_records:
+            # Use 'year' instead of 'study_year' to match the updated record structure
             name = rec.get('name')
-            study_year = rec.get('study_year')
-            if name and study_year:
-                existing_keys.add((name.lower(), str(study_year).lower()))
+            year = rec.get('year') 
+            if name and year:
+                existing_keys.add((name.lower(), str(year).lower()))
         
         unique_new_records = []
         duplicate_records = []
         
         for record in new_records:
+            # Use 'year' instead of 'study_year'
             name = record.get('name')
-            study_year = record.get('study_year')
+            year = record.get('year') 
             
-            if name and study_year and (name.lower(), str(study_year).lower()) in existing_keys:
+            if name and year and (name.lower(), str(year).lower()) in existing_keys:
                 duplicate_records.append(record)
             else:
                 unique_new_records.append(record)
