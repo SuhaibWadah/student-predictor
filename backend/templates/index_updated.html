@@ -957,7 +957,7 @@
                     loading.classList.remove('active');
 
                     if (result.status === 200) {
-                        displaySingleResult(result.data.data);
+                        displaySingleResult(result.data);
                         results.classList.add('active');
                         showAlert('singleAlert', 'success', 'Prediction completed successfully!');
                     } else {
