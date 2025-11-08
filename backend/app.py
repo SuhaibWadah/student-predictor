@@ -28,15 +28,21 @@ CORS(app)
 
 # Configuration
 app.config["JSON_SORT_KEYS"] = False
+# Use the DATABASE_URL environment variable for PostgreSQL/Supabase
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
     "DATABASE_URL",
-    "sqlite:///student_predictions.db"
+    "sqlite:///student_predictions.db" # Fallback to SQLite for local development
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize database
 from models import db, init_db
 db.init_app(app)
+
+# 🚀 CRITICAL FIX: Initialize DB tables here, outside the run block 🚀
+# This ensures tables are created when run by a production WSGI server (like on Render)
+with app.app_context():
+    init_db(app) # Pass the app instance to init_db if it needs it
 
 # Import API routes
 from routes import api_bp
@@ -90,23 +96,17 @@ def internal_error(error):
         "timestamp": datetime.utcnow().isoformat()
     }), 500
 
-# Ensure database is initialized before handling requests
-@app.before_request
-def before_request():
-    # with app.app_context():
-    #     init_db()
+# Removed the @app.before_request hook and fixed the run block below
 
-    if __name__ == "__main__":
-        PORT = int(os.getenv("PORT", 5000))
+if __name__ == "__main__":
+    PORT = int(os.getenv("PORT", 5000))
+    logger.info(f"Starting Flask on port {PORT}...")
 
-    # Initialize DB ONCE upon startup
-        with app.app_context():
-            init_db()
+    # The init_db() call is now safely outside the 'if __name__ == "__main__":' block
+    # but still needs to be run inside the app context, which is handled above.
 
-        logger.info(f"Starting Flask on port {PORT}...")
-
-        app.run(
-            host="0.0.0.0",
-            port=PORT,
-            debug=os.getenv("FLASK_ENV") == "development"
-        )
+    app.run(
+        host="0.0.0.0",
+        port=PORT,
+        debug=os.getenv("FLASK_ENV") == "development"
+    )
