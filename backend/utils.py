@@ -11,6 +11,7 @@ from werkzeug.datastructures import FileStorage
 from typing import Any
 logger = logging.getLogger(__name__)
 
+
 class FileParser:
     """
     Utility class for parsing various file formats (CSV, Excel).
@@ -43,85 +44,83 @@ class FileParser:
     }
     
     @staticmethod
-    def parse_file(file: FileStorage) -> tuple[list[dict], str | None]:
-        """
-        Parse uploaded file and extract student data into a FLAT dictionary structure.
-        """
-        try:
-            # ... (File format checking and pandas reading remain the same) ...
+def parse_file(file: FileStorage) -> tuple[list[dict], str | None]:
+    """
+    Parse uploaded file and extract student data into a FLAT dictionary structure.
+    """
+    try:
+        # Determine file extension
+        filename = file.filename
+        ext = filename[filename.rfind('.'):].lower()
+        if ext not in FileParser.SUPPORTED_FORMATS:
+            raise ValueError(f"Unsupported file format: {ext}")
 
-            # Normalize column names
-            df.columns = df.columns.str.lower().str.replace('[^a-z0-9_]+', '_', regex=True)
+        # Read file into pandas DataFrame
+        if ext == '.csv':
+            df = pd.read_csv(file)
+        elif ext in ['.xls', '.xlsx']:
+            df = pd.read_excel(file)
+        else:
+            raise ValueError(f"Unsupported file format: {ext}")
 
-            # Validate required columns exist
-            df_columns = set(df.columns)
-            missing_columns = FileParser.REQUIRED_FIELDS - df_columns
+        # Normalize column names
+        df.columns = df.columns.str.lower().str.replace('[^a-z0-9_]+', '_', regex=True)
+
+        # Validate required columns exist
+        df_columns = set(df.columns)
+        missing_columns = FileParser.REQUIRED_FIELDS - df_columns
+        
+        if missing_columns:
+            raise ValueError(f"Missing required columns (normalized to lowercase/underscores): {', '.join(sorted(missing_columns))}")
+        
+        records = []
+        
+        for idx, row in df.iterrows():
+            record = {} 
+            is_valid_row = True
             
-            if missing_columns:
-                raise ValueError(f"Missing required columns (normalized to lowercase/underscores): {', '.join(sorted(missing_columns))}")
-            
-            records = []
-            
-            for idx, row in df.iterrows():
-                # Initialize the record as a FLAT dictionary
-                record = {} 
-                is_valid_row = True
+            for col_name in FileParser.REQUIRED_FIELDS:
+                value = row.get(col_name)
                 
-                # Extract and clean all fields into a FLAT dictionary
-                for col_name in FileParser.REQUIRED_FIELDS:
-                    value = row.get(col_name)
-                    
-                    if pd.isna(value) or value is None:
-                        if col_name in ['name', 'study_year', 'major']: 
-                            logger.error(f"Row {idx + 1} skipped: Missing critical field '{col_name}'.")
-                            is_valid_row = False
-                            break
-                        
-                        # Store None for non-critical missing features (will be imputed/caught in routes.py)
-                        record[col_name] = None
-                        continue
+                if pd.isna(value) or value is None:
+                    if col_name in ['name', 'study_year', 'major']: 
+                        logger.error(f"Row {idx + 1} skipped: Missing critical field '{col_name}'.")
+                        is_valid_row = False
+                        break
+                    record[col_name] = None
+                    continue
 
-                    # Clean value
-                    if isinstance(value, str):
-                        # CRITICAL: Strip whitespace to prevent Type/Value errors in routes.py
-                        value = value.strip() 
-                    
-                    # Store everything directly in the record dictionary
-                    if col_name in ['name', 'major']:
-                        record[col_name] = str(value)
-                    else:
-                        # Attempt to convert all numerical fields to float/int
-                        try:
-                            # Use int for most categorical features
-                            if col_name in ['study_year'] or col_name.endswith('_status') or col_name.endswith('_mode'):
-                                record[col_name] = int(value)
-                            # Use float for all other numeric/grade fields
-                            else:
-                                record[col_name] = float(value)
-                        except (ValueError, TypeError):
-                            # This will be caught later in prepare_hf_features for better error reporting
-                            record[col_name] = value 
-                
-                if is_valid_row:
-                    # Rename 'study_year' to 'year' for consistency with the Student model
-                    # Also handles the mandatory type conversion to int
-                    if 'study_year' in record:
-                        record['year'] = record.pop('study_year')
-                    elif 'study_year' in FileParser.REQUIRED_FIELDS:
-                        logger.error(f"Row {idx + 1} skipped: 'study_year' missing after validation.")
-                        continue # Should be caught above, but as a safeguard
-                        
-                    # Add a placeholder for 'semester' if needed elsewhere (though removed from DB)
-                    record['semester'] = 1 
-                    records.append(record)
+                if isinstance(value, str):
+                    value = value.strip() 
+
+                if col_name in ['name', 'major']:
+                    record[col_name] = str(value)
+                else:
+                    try:
+                        if col_name in ['study_year'] or col_name.endswith('_status') or col_name.endswith('_mode'):
+                            record[col_name] = int(value)
+                        else:
+                            record[col_name] = float(value)
+                    except (ValueError, TypeError):
+                        record[col_name] = value 
             
-            logger.info(f"Successfully parsed {len(records)} valid records from {filename}")
-            return records, None
-            
-        except Exception as e:
-            error_msg = f"Error parsing file: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return [], error_msg
+            if is_valid_row:
+                if 'study_year' in record:
+                    record['year'] = record.pop('study_year')
+                elif 'study_year' in FileParser.REQUIRED_FIELDS:
+                    logger.error(f"Row {idx + 1} skipped: 'study_year' missing after validation.")
+                    continue
+                record['semester'] = 1 
+                records.append(record)
+        
+        logger.info(f"Successfully parsed {len(records)} valid records from {filename}")
+        return records, None
+        
+    except Exception as e:
+        error_msg = f"Error parsing file: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return [], error_msg
+
 
 
 class DataValidator:
