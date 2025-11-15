@@ -957,7 +957,7 @@
                     loading.classList.remove('active');
 
                     if (result.status === 200) {
-                        displaySingleResult(result.data);
+                        displaySingleResult(result.data.data);
                         results.classList.add('active');
                         showAlert('singleAlert', 'success', 'Prediction completed successfully!');
                     } else {
@@ -1271,7 +1271,7 @@ function displayHistory(data) {
                         // to show a historical result without overwriting the form.
                         // For now, let's just show it in the 'singleResults' div, 
                         // but you should adjust the HTML to handle this better.
-                        displaySingleResult(result.data); 
+                        displaySingleResult(result.data.data); 
                         document.getElementById('singleResults').classList.add('active');
                         document.getElementById('singleAlert').classList.remove('active');
                         document.getElementById('singleForm').style.display = 'none'; // Hide the form temporarily
