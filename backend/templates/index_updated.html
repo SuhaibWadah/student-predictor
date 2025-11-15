@@ -1084,7 +1084,7 @@
                     loading.classList.remove('active');
 
                     if (result.status === 200) {
-                        displayBatchResults(result.data.data);
+                        displayBatchResults(result.data);
                         results.classList.add('active');
                         showAlert('batchAlert', 'success', 'Batch processing completed!');
                     } else {
