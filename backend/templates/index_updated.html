@@ -1087,94 +1087,105 @@
         }
 
         // Display batch results (Retained as is)
-        function displayBatchResults(data) {
-            var summary = document.getElementById('batchSummary');
-            var content = document.getElementById('batchResultContent');
+        // Display batch results - FIXED VERSION
+function displayBatchResults(data) {
+    var summary = document.getElementById('batchSummary');
+    var content = document.getElementById('batchResultContent');
 
-            // --- SUMMARY STATS (Optional: Update if needed) ---
-            summary.innerHTML = '<div class="summary-stats-inner">' +
-                '<p>Total Records: <strong>' + data.total_records + '</strong></p>' +
-                '<p>Successful Predictions: <strong style="color: green;">' + data.successful + '</strong></p>' +
-                '<p>Failed Records: <strong style="color: red;">' + data.failed + '</strong></p>' +
-                '<p>Duplicates Found: <strong style="color: orange;">' + data.duplicates + '</strong></p>' +
-                '</div>';
+    // Summary stats
+    summary.innerHTML = '<div class="summary-stats">' +
+        '<div class="stat-box"><h4>Total Records</h4><div class="value">' + data.total_records + '</div></div>' +
+        '<div class="stat-box"><h4>Successful</h4><div class="value" style="color: green;">' + data.successful + '</div></div>' +
+        '<div class="stat-box"><h4>Failed</h4><div class="value" style="color: red;">' + data.failed + '</div></div>' +
+        '<div class="stat-box"><h4>Duplicates</h4><div class="value" style="color: orange;">' + data.duplicates + '</div></div>' +
+        '</div>';
 
-            if (data.predictions.length === 0) {
-                content.innerHTML = '<p style="color:#666; margin-top:20px;">No successful predictions to display.</p>';
-                return;
-            }
+    if (data.predictions.length === 0) {
+        content.innerHTML = '<p style="color:#666; margin-top:20px;">No successful predictions to display.</p>';
+        return;
+    }
 
-            // Determine feature keys for dynamic columns (Use the first prediction as a template)
-            // The API response for batch should ideally include 'name', 'year', 'major' and the 'features' dict.
-            const firstFeatures = data.predictions[0].features || {};
-            
-            // Define the starting keys explicitly (name, year, major, predicted_performance)
-            // Then append the feature keys from the prediction response
-            const featureKeys = Object.keys(firstFeatures).filter(key => key !== 'name' && key !== 'year' && key !== 'major'); 
+    // Get the first prediction to determine available fields
+    const firstPred = data.predictions[0];
+    
+    // Check if year and major exist at the root level or in features
+    const hasYear = firstPred.hasOwnProperty('year');
+    const hasMajor = firstPred.hasOwnProperty('major');
+    
+    // If not in root, check in features
+    const yearFromFeatures = !hasYear && firstPred.features ? firstPred.features.year : null;
+    const majorFromFeatures = !hasMajor && firstPred.features ? firstPred.features.major : null;
 
-            // 1. Build Table Header (<thead>)
-            let headerHTML = '<tr>' +
-                '<th>Name</th>' +
-                '<th>Year</th>' +
-                '<th>Major</th>' + // ✨ ADDED: Major column
-                '<th>Predicted Score</th>' +
-                // Dynamically add headers for all features
-                featureKeys.map(key => '<th>' + key.replace(/_/g, ' ') + '</th>').join('') +
-                '<th>Details</th>' + // Changed 'Plan Summary' to 'Details'
-                '</tr>';
+    // Build table header
+    let headerHTML = '<tr>' +
+        '<th>Name</th>';
+    
+    // Add Year column if data exists
+    if (hasYear || yearFromFeatures) {
+        headerHTML += '<th>Year</th>';
+    }
+    
+    // Add Major column if data exists  
+    if (hasMajor || majorFromFeatures) {
+        headerHTML += '<th>Major</th>';
+    }
+    
+    headerHTML += '<th>Predicted Score</th>' +
+        '<th>Details</th>' +
+        '</tr>';
 
-            // 2. Build Table Body (<tbody>)
-            let bodyHTML = '';
-            data.predictions.forEach(function (pred) {
-                
-                // Robust Score Display (from previous fix)
-                const predScore = pred.predicted_performance;
-                const displayScore = (!isNaN(parseFloat(predScore)) && isFinite(parseFloat(predScore)))
-                    ? parseFloat(predScore).toFixed(2) + '%'
-                    : predScore;
+    // Build table body
+    let bodyHTML = '';
+    data.predictions.forEach(function (pred) {
+        // Get year and major from appropriate location
+        const year = pred.year || (pred.features ? pred.features.year : 'Unknown');
+        const major = pred.major || (pred.features ? pred.features.major : 'Unknown');
+        
+        // Robust Score Display
+        const predScore = pred.predicted_performance;
+        const displayScore = (!isNaN(parseFloat(predScore)) && isFinite(parseFloat(predScore)))
+            ? parseFloat(predScore).toFixed(2) + '%'
+            : predScore;
 
-                // Start the row with Name, Year, Major, and Predicted Score
-                let rowHTML = '<tr>' +
-                    '<td>' + pred.name + '</td>' +
-                    '<td>' + pred.year + '</td>' +
-                    '<td>' + pred.major + '</td>' + // ✨ ADDED: Major cell
-                    '<td><strong>' + displayScore + '</strong></td>';
-
-                // Add cells for all features dynamically
-                featureKeys.forEach(key => {
-                    // Use the nested 'features' object from the prediction response
-                    const featureValue = pred.features ? pred.features[key] : 'N/A';
-                    // Check for null/NaN before displaying
-                    const displayValue = (featureValue === null || isNaN(featureValue)) ? 'N/A' : featureValue;
-                    rowHTML += '<td>' + displayValue + '</td>';
-                });
-
-                // Add the Details column (link to student detail)
-                rowHTML += '<td><a href="#history" onclick="switchTab(\'history\'); document.getElementById(\'history-search\').value=\'' + pred.name + '\'; loadHistory();">View</a></td>' +
-                    '</tr>';
-
-                bodyHTML += rowHTML;
-            });
-
-            // 3. Assemble the full table
-            var tableHTML = '<table class="results-table">' +
-                '<thead>' + headerHTML + '</thead>' +
-                '<tbody>' + bodyHTML + '</tbody>' +
-                '</table>';
-
-            // Display error details if present
-            if (data.failed > 0) {
-                // Display detailed error list here for better user feedback
-                tableHTML += '<h4 style="color: red; margin-top: 20px;">' + data.failed + ' Record(s) Failed to Process</h4>';
-                tableHTML += '<ul>';
-                data.errors.forEach(err => {
-                    tableHTML += `<li>Record ${err.record_index} (${err.name}): ${err.error}</li>`;
-                });
-                tableHTML += '</ul>';
-            }
-
-            content.innerHTML = tableHTML;
+        let rowHTML = '<tr>' +
+            '<td>' + (pred.name || 'Unknown') + '</td>';
+        
+        // Add Year cell if data exists
+        if (hasYear || yearFromFeatures) {
+            rowHTML += '<td>' + year + '</td>';
         }
+        
+        // Add Major cell if data exists
+        if (hasMajor || majorFromFeatures) {
+            rowHTML += '<td>' + major + '</td>';
+        }
+        
+        rowHTML += '<td><strong>' + displayScore + '</strong></td>' +
+            '<td><a href="#history" onclick="switchTab(\'history\'); setTimeout(() => { document.querySelector(\'#history-search\') && (document.querySelector(\'#history-search\').value=\'' + pred.name + '\'); loadHistory(); }, 100);">View Details</a></td>' +
+            '</tr>';
+
+        bodyHTML += rowHTML;
+    });
+
+    // Assemble table
+    var tableHTML = '<table class="results-table">' +
+        '<thead>' + headerHTML + '</thead>' +
+        '<tbody>' + bodyHTML + '</tbody>' +
+        '</table>';
+
+    // Display errors if any
+    if (data.failed > 0 && data.errors) {
+        tableHTML += '<div style="margin-top: 30px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 5px;">' +
+            '<h4 style="margin-top: 0;">Failed Records (' + data.failed + ')</h4>' +
+            '<ul style="margin-bottom: 0;">';
+        data.errors.forEach(err => {
+            tableHTML += '<li>Record ' + err.record_index + ' (' + err.name + '): ' + err.error + '</li>';
+        });
+        tableHTML += '</ul></div>';
+    }
+
+    content.innerHTML = tableHTML;
+}
 
         // Load history (Retained as is)
         function loadHistory() {
@@ -1207,35 +1218,46 @@
         }
 
         // Display history
-        function displayHistory(data) {
-            var content = document.getElementById('historyContent');
-            var tableHTML = '<table class="results-table"><thead><tr>' +
-                '<th>Name</th><th>Year</th><th>Major</th><th>Predicted Score</th><th>Date</th><th>Details</th>' + // ✨ ADDED: Major and Details column
-                '</tr></thead><tbody>';
+        // Display history - FIXED VERSION
+function displayHistory(data) {
+    var content = document.getElementById('historyContent');
+    
+    if (!data || data.length === 0) {
+        content.innerHTML = '<p style="color:#666; text-align:center; padding: 40px;">No prediction history found.</p>';
+        return;
+    }
 
-            data.forEach(function (record) {
-                var date = new Date(record.created_at).toLocaleDateString();
+    var tableHTML = '<table class="results-table"><thead><tr>' +
+        '<th>Name</th><th>Year</th><th>Major</th><th>Predicted Score</th><th>Date</th><th>Details</th>' +
+        '</tr></thead><tbody>';
 
-                // Robust Score Display for History Table
-                const recordScore = record.predicted_performance;
-                const displayScore = (!isNaN(parseFloat(recordScore)) && isFinite(parseFloat(recordScore)))
-                    ? parseFloat(recordScore).toFixed(2) + '%'
-                    : recordScore;
+    data.forEach(function (record) {
+        var date = new Date(record.created_at).toLocaleDateString();
 
-                tableHTML += '<tr>' +
-                    '<td>' + record.name + '</td>' +
-                    '<td>' + record.year + '</td>' +
-                    '<td>' + record.major + '</td>' + // ✨ ADDED: Major cell
-                    '<td><strong>' + displayScore + '</strong></td>' +
-                    '<td>' + date + '</td>' +
-                    // Link to view the single record details
-                    '<td><button onclick="viewStudentDetail(' + record.id + ')" class="btn-sm">View</button></td>' + 
-                    '</tr>';
-            });
+        // Get year and major with fallbacks
+        const year = record.year || 'Unknown';
+        const major = record.major || 'Unknown';
 
-            tableHTML += '</tbody></table>';
-            content.innerHTML = tableHTML;
-        }
+        // Robust Score Display
+        const recordScore = record.predicted_performance;
+        const displayScore = (!isNaN(parseFloat(recordScore)) && isFinite(parseFloat(recordScore)))
+            ? parseFloat(recordScore).toFixed(2) + '%'
+            : recordScore;
+
+        tableHTML += '<tr>' +
+            '<td>' + (record.name || 'Unknown') + '</td>' +
+            '<td>' + year + '</td>' +
+            '<td>' + major + '</td>' +
+            '<td><strong>' + displayScore + '</strong></td>' +
+            '<td>' + date + '</td>' +
+            // Fix the button onclick in displayHistory
+'<td><button onclick="viewStudentDetail(' + record.id + ')" class="btn-secondary" style="padding: 6px 12px; font-size: 0.9em;">View Details</button></td>' +
+            '</tr>';
+    });
+
+    tableHTML += '</tbody></table>';
+    content.innerHTML = tableHTML;
+}
 
         // New function to handle viewing student details from history
         function viewStudentDetail(studentId) {
