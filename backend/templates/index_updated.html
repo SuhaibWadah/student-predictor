@@ -933,69 +933,81 @@
 
         // Predict single student (Retained as is)
         function predictSingle(data) {
-            var loading = document.getElementById('singleLoading');
-            var results = document.getElementById('singleResults');
-            var alert = document.getElementById('singleAlert');
+    var loading = document.getElementById('singleLoading');
+    var results = document.getElementById('singleResults');
+    var alert = document.getElementById('singleAlert');
 
-            loading.classList.add('active');
-            results.classList.remove('active');
-            alert.classList.remove('active');
+    loading.classList.add('active');
+    results.classList.remove('active');
+    alert.classList.remove('active');
 
-            fetch(API_BASE_URL + '/predict-single', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-                .then(function (response) {
-                    return response.json().then(function (json) {
-                        return { status: response.status, data: json };
-                    });
-                })
-                .then(function (result) {
-                    loading.classList.remove('active');
+    fetch(API_BASE_URL + '/predict-single', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+        .then(function (response) {
+            return response.json().then(function (json) {
+                return { status: response.status, data: json };
+            });
+        })
+        .then(function (result) {
+            loading.classList.remove('active');
 
-                    if (result.status === 200) {
-                        displaySingleResult(result.data.data);
-                        results.classList.add('active');
-                        showAlert('singleAlert', 'success', 'Prediction completed successfully!');
-                    } else {
-                        showAlert('singleAlert', 'error', result.data.error || 'Prediction failed');
-                    }
-                })
-                .catch(function (error) {
-                    loading.classList.remove('active');
-                    showAlert('singleAlert', 'error', 'Error: ' + error.message);
-                });
-        }
+            // FIXED HERE
+            if (result.status === 200) {
+                displaySingleResult(result.data);
+                results.classList.add('active');
+                showAlert('singleAlert', 'success', 'Prediction completed successfully!');
+            } else {
+                showAlert('singleAlert', 'error', result.data.error || 'Prediction failed');
+            }
+        })
+        .catch(function (error) {
+            loading.classList.remove('active');
+            showAlert('singleAlert', 'error', 'Error: ' + error.message);
+        });
+}
+
 
         // Display single prediction result (Retained as is)
         function displaySingleResult(data) {
-            var content = document.getElementById('singleResultContent');
+    var content = document.getElementById('singleResultContent');
 
-            const predictedPerformance = data.predicted_performance;
-            let displayScore;
+    // FIX 1: Safe extraction with fallbacks
+    const name = data.name || data.student_name || "Unknown Student";
+    const year = data.year || data.student_year || "N/A";
 
-            // Handle Categorical Score (String) vs. Numeric Score
-            if (!isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
-                displayScore = parseFloat(predictedPerformance).toFixed(2) + '%';
-            } else {
-                displayScore = predictedPerformance;
-            }
+    const predictedPerformance = data.predicted_performance || data.prediction || data.performance || "N/A";
 
-            // Use the Markdown Formatter for Improvement Plan
-            const formattedPlan = formatMarkdown(data.improvement_plan);
+    // FIX 2: Keep numeric formatting safe
+    let displayScore;
+    if (!isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
+        displayScore = parseFloat(predictedPerformance).toFixed(2) + '%';
+    } else {
+        displayScore = predictedPerformance;
+    }
 
-            content.innerHTML = '<div class="result-card">' +
-                '<h3>Prediction Result for ' + data.name + ' (Year ' + data.year + ')</h3>' +
-                '<p><strong>Predicted Performance Score:</strong></p>' +
-                '<div class="score-display">' + displayScore + '</div>' +
-                '<p><strong>Improvement Plan:</strong></p>' +
-                // Use a <div> for the formatted HTML content
-                '<div style="line-height: 1.6;">' + formattedPlan + '</div>' +
-                '</div>';
-        }
+    // FIX 3: Fallback for improvement plan
+    const planRaw = data.improvement_plan || data.plan || data.feedback || "No improvement plan available.";
+    const formattedPlan = formatMarkdown(planRaw);
+
+    // FIX 4: Output
+    content.innerHTML = `
+        <div class="result-card">
+            <h3>Prediction Result for ${name} (Year ${year})</h3>
+
+            <p><strong>Predicted Performance Score:</strong></p>
+            <div class="score-display">${displayScore}</div>
+
+            <p><strong>Improvement Plan:</strong></p>
+            <div style="line-height: 1.6;">${formattedPlan}</div>
+        </div>
+    `;
+}
+
 
         // File upload handling (Retained as is)
         var fileUploadArea = document.getElementById('fileUploadArea');
@@ -1271,7 +1283,7 @@ function displayHistory(data) {
                         // to show a historical result without overwriting the form.
                         // For now, let's just show it in the 'singleResults' div, 
                         // but you should adjust the HTML to handle this better.
-                        displaySingleResult(result.data.data); 
+                        displaySingleResult(result.data); 
                         document.getElementById('singleResults').classList.add('active');
                         document.getElementById('singleAlert').classList.remove('active');
                         document.getElementById('singleForm').style.display = 'none'; // Hide the form temporarily
