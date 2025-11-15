@@ -784,523 +784,512 @@
     </div>
 
    <script>
-    // Configuration
-    var API_BASE_URL = '/api';
+        // Configuration
+        var API_BASE_URL = '/api';
 
-    // Tab switching
-    document.querySelectorAll('.tab-button').forEach(function (button) {
-        button.addEventListener('click', function () {
-            var tabName = this.getAttribute('data-tab');
-            switchTab(tabName);
+        // NOTE: Removed redundant 'featureMappings' as the values are hardcoded in the submit handler.
+        // It's cleaner to handle hardcoded values only in one place (the submit handler).
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var tabName = this.getAttribute('data-tab');
+                switchTab(tabName);
+            });
         });
-    });
-    
-    // Markdown to HTML conversion helper
-    function formatMarkdown(markdownText) {
-        if (!markdownText) return '';
-        let html = markdownText;
+        
+        // Markdown to HTML conversion helper (Retained as is)
+        function formatMarkdown(markdownText) {
+            if (!markdownText) return '';
+            let html = markdownText;
 
-        // 1. Convert Headers (H2 -> H4, H3 -> H5)
-        html = html.replace(/^## (.*$)/gim, '<h4>$1</h4>');
-        html = html.replace(/^### (.*$)/gim, '<h5>$1</h5>');
+            // 1. Convert Headers (H2 -> H4, H3 -> H5)
+            html = html.replace(/^## (.*$)/gim, '<h4>$1</h4>');
+            html = html.replace(/^### (.*$)/gim, '<h5>$1</h5>');
 
-        // 2. Wrap list items (<li>)
-        html = html.replace(/^(?:-|\*) (.*$)/gim, '<li>$1</li>');
+            // 2. Wrap list items (<li>)
+            // NOTE: This needs to run before list wrapping and handles the '- ' or '* ' format
+            html = html.replace(/^(?:-|\*) (.*$)/gim, '<li>$1</li>');
 
-        // 3. Bold (**)
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // 3. Bold (**)
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-        // 4. Wrap blocks of <li> in <ul> tags
-        let inList = false;
-        const lines = html.split('\n').map(line => line.trim());
-        html = lines.map(line => {
-            if (line === '') return '<br>'; 
-            
-            if (line.startsWith('<li>') && !inList) {
-                inList = true;
-                return '<ul style="list-style-type: disc; margin-left: 20px;">' + line;
-            } else if (line.startsWith('<li>')) {
-                return line;
-            } else if (inList) {
-                inList = false;
-                return '</ul>' + line;
-            } else {
-                return line;
+            // 4. Wrap blocks of <li> in <ul> tags
+            // This is a simple parser to wrap list items into an unordered list structure.
+            let inList = false;
+            // Changed split/join method to correctly handle the previous replacements
+            const lines = html.split('\n').map(line => line.trim());
+            html = lines.map(line => {
+                // If line contains no content but was separated by a line break, just return it
+                if (line === '') return '<br>'; 
+                
+                if (line.startsWith('<li>') && !inList) {
+                    inList = true;
+                    return '<ul style="list-style-type: disc; margin-left: 20px;">' + line;
+                } else if (line.startsWith('<li>')) {
+                    return line;
+                } else if (inList) {
+                    inList = false;
+                    return '</ul>' + line;
+                } else {
+                    return line;
+                }
+            }).join('\n'); // Rejoin with line breaks
+            if (inList) {
+                html += '</ul>'; // Close list if it was open at the end
             }
-        }).join('\n');
-        if (inList) {
-            html += '</ul>';
+
+            // 5. Handle remaining line breaks for paragraphs outside of lists
+            html = html.replace(/\n\n/g, '<p></p>').replace(/\n/g, '<br>');
+
+            return html;
         }
 
-        // 5. Handle remaining line breaks
-        html = html.replace(/\n\n/g, '<p></p>').replace(/\n/g, '<br>');
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(function (tab) {
+                tab.classList.remove('active');
+            });
 
-        return html;
-    }
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(function (btn) {
+                btn.classList.remove('active');
+            });
 
-    function switchTab(tabName) {
-        // Hide all tabs
-        document.querySelectorAll('.tab-content').forEach(function (tab) {
-            tab.classList.remove('active');
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked button
+            // NOTE: You need the 'event' passed to the listener, or use 'this'
+            // For simplicity, let's assume 'event' is accessible or you update the listener
+            document.querySelector('.tab-button[data-tab="' + tabName + '"]').classList.add('active');
+
+            // Load history when history tab is clicked
+            if (tabName === 'history') {
+                loadHistory();
+            }
+        }
+
+        // Single prediction form submission
+        document.getElementById('singleForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            var formData = new FormData(this);
+            var data = {
+                // ✨ ADDED: Personal Information Fields
+                'name': formData.get('name'), 
+                'year': parseInt(formData.get('year')), 
+                'major': formData.get('major'), 
+
+                // Personal Information (Features)
+                'marital_status': parseInt(formData.get('maritalStatus')),
+                'application_mode': parseInt(formData.get('applicationMode')),
+                'application_order': 1,  // Always 1
+                'course': parseInt(formData.get('course')),
+                'daytime_evening_attendance': 1,  // Always 1
+                'previous_qualification': 12,  // Always 12
+                // Convert 0-100 to 0-200
+                'previous_qualification_grade': parseInt(formData.get('previousQualificationGrade')) * 2, 
+                'nationality': 11,  // Always 11
+                'mothers_qualification': parseInt(formData.get('mothersQualification')),
+                'fathers_qualification': parseInt(formData.get('fathersQualification')),
+                'mothers_occupation': parseInt(formData.get('mothersOccupation')),
+                'fathers_occupation': parseInt(formData.get('fathersOccupation')),
+                // Same as previous qualification grade
+                'admission_grade': parseInt(formData.get('previousQualificationGrade')) * 2, 
+                'displaced': parseInt(formData.get('displaced')),
+                'educational_special_needs': parseInt(formData.get('educationalSpecialNeeds')),
+                'debtor': parseInt(formData.get('debtor')),
+                'tuition_fees_up_to_date': parseInt(formData.get('tuitionFeesUpToDate')),
+                'gender': parseInt(formData.get('gender')),
+                'scholarship_holder': parseInt(formData.get('scholarshipHolder')),
+                'age_at_enrollment': parseInt(formData.get('ageAtEnrollment')),
+                'international': parseInt(formData.get('international')),
+                
+                // Semester 1
+                'curricular_units_1st_sem_credited': 0,  // Always 0
+                'curricular_units_1st_sem_enrolled': parseInt(formData.get('sem1Enrolled')),
+                'curricular_units_1st_sem_evaluations': parseInt(formData.get('sem1Enrolled')),  // Same as enrolled
+                'curricular_units_1st_sem_approved': parseInt(formData.get('sem1Approved')),
+                'curricular_units_1st_sem_grade': parseFloat(formData.get('sem1Grade')),
+                'curricular_units_1st_sem_without_evaluations': 0,  // Always 0
+                
+                // Semester 2
+                'curricular_units_2nd_sem_credited': 0,  // Always 0
+                'curricular_units_2nd_sem_enrolled': parseInt(formData.get('sem2Enrolled')),
+                'curricular_units_2nd_sem_evaluations': parseInt(formData.get('sem2Enrolled')),  // Same as enrolled
+                'curricular_units_2nd_sem_approved': parseInt(formData.get('sem2Approved')),
+                'curricular_units_2nd_sem_grade': parseFloat(formData.get('sem2Grade')),
+                'curricular_units_2nd_sem_without_evaluations': 0,  // Always 0
+                
+                // Economic indicators
+                'unemployment_rate': 17.10,  // Always 17.10
+                'inflation_rate': 25.8,  // Always 25.8
+                'gdp': 17.40  // Always 17.40
+            };
+
+            predictSingle(data);
         });
 
-        // Remove active class from all buttons
-        document.querySelectorAll('.tab-button').forEach(function (btn) {
-            btn.classList.remove('active');
+        // Predict single student (Retained as is)
+        function predictSingle(data) {
+            var loading = document.getElementById('singleLoading');
+            var results = document.getElementById('singleResults');
+            var alert = document.getElementById('singleAlert');
+
+            loading.classList.add('active');
+            results.classList.remove('active');
+            alert.classList.remove('active');
+
+            fetch(API_BASE_URL + '/predict-single', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(function (response) {
+                    return response.json().then(function (json) {
+                        return { status: response.status, data: json };
+                    });
+                })
+                .then(function (result) {
+                    loading.classList.remove('active');
+
+                    if (result.status === 200) {
+                        displaySingleResult(result.data);
+                        results.classList.add('active');
+                        showAlert('singleAlert', 'success', 'Prediction completed successfully!');
+                    } else {
+                        showAlert('singleAlert', 'error', result.data.error || 'Prediction failed');
+                    }
+                })
+                .catch(function (error) {
+                    loading.classList.remove('active');
+                    showAlert('singleAlert', 'error', 'Error: ' + error.message);
+                });
+        }
+
+        // Display single prediction result (Retained as is)
+        function displaySingleResult(data) {
+            var content = document.getElementById('singleResultContent');
+
+            const predictedPerformance = data.predicted_performance;
+            let displayScore;
+
+            // Handle Categorical Score (String) vs. Numeric Score
+            if (!isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
+                displayScore = parseFloat(predictedPerformance).toFixed(2) + '%';
+            } else {
+                displayScore = predictedPerformance;
+            }
+
+            // Use the Markdown Formatter for Improvement Plan
+            const formattedPlan = formatMarkdown(data.improvement_plan);
+
+            content.innerHTML = '<div class="result-card">' +
+                '<h3>Prediction Result for ' + data.name + ' (Year ' + data.year + ')</h3>' +
+                '<p><strong>Predicted Performance Score:</strong></p>' +
+                '<div class="score-display">' + displayScore + '</div>' +
+                '<p><strong>Improvement Plan:</strong></p>' +
+                // Use a <div> for the formatted HTML content
+                '<div style="line-height: 1.6;">' + formattedPlan + '</div>' +
+                '</div>';
+        }
+
+        // File upload handling (Retained as is)
+        var fileUploadArea = document.getElementById('fileUploadArea');
+        var batchFile = document.getElementById('batchFile');
+
+        fileUploadArea.addEventListener('click', function () {
+            batchFile.click();
+        });
+        batchFile.addEventListener('change', function (e) {
+            if (this.files && this.files.length > 0) {
+                fileUploadArea.classList.add('file-selected');
+                fileUploadArea.querySelector('p').textContent = 'Selected file: ' + this.files[0].name;
+            }
         });
 
-        // Show selected tab
-        document.getElementById(tabName).classList.add('active');
+        fileUploadArea.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
 
-        // Add active class to clicked button
-        document.querySelector('.tab-button[data-tab="' + tabName + '"]').classList.add('active');
+        fileUploadArea.addEventListener('dragleave', function () {
+            this.classList.remove('dragover');
+        });
 
-        // Load history when history tab is clicked
-        if (tabName === 'history') {
-            loadHistory();
+        fileUploadArea.addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+
+            const droppedFiles = e.dataTransfer.files;
+            if (droppedFiles.length > 0) {
+                batchFile.files = droppedFiles; // This line is optional — not all browsers allow it
+                fileUploadArea.classList.add('file-selected');
+                fileUploadArea.querySelector('p').textContent = 'Selected file: ' + droppedFiles[0].name;
+            }
+        });
+
+        // Batch prediction form submission (Retained as is)
+        document.getElementById('batchForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // NOTE: 'currentFile' should be defined somewhere if you intend to use it, 
+            // otherwise just use batchFile.files[0]
+            const file = batchFile.files[0]; 
+            if (!file) {
+                showAlert('batchAlert', 'error', 'Please select or drop a file');
+                return;
+            }
+            predictBatch(file);
+        });
+
+        // Predict batch (Retained as is)
+        function predictBatch(file) {
+            var loading = document.getElementById('batchLoading');
+            var results = document.getElementById('batchResults');
+            var alert = document.getElementById('batchAlert');
+
+            loading.classList.add('active');
+            results.classList.remove('active');
+            alert.classList.remove('active');
+
+            var formData = new FormData();
+            formData.append('file', file);
+
+            fetch(API_BASE_URL + '/predict-batch', {
+                method: 'POST',
+                body: formData
+            })
+                .then(function (response) {
+                    return response.json().then(function (json) {
+                        return { status: response.status, data: json };
+                    });
+                })
+                .then(function (result) {
+                    loading.classList.remove('active');
+
+                    if (result.status === 200) {
+                        displayBatchResults(result.data.data);
+                        results.classList.add('active');
+                        showAlert('batchAlert', 'success', 'Batch processing completed!');
+                    } else {
+                        showAlert('batchAlert', 'error', result.data.error || 'Batch processing failed');
+                    }
+                })
+                .catch(function (error) {
+                    loading.classList.remove('active');
+                    showAlert('batchAlert', 'error', 'Error: ' + error.message);
+                });
         }
+
+        // Display batch results (Retained as is)
+        // Display batch results - FIXED VERSION
+function displayBatchResults(data) {
+    var summary = document.getElementById('batchSummary');
+    var content = document.getElementById('batchResultContent');
+
+    // Summary stats
+    summary.innerHTML = '<div class="summary-stats">' +
+        '<div class="stat-box"><h4>Total Records</h4><div class="value">' + data.total_records + '</div></div>' +
+        '<div class="stat-box"><h4>Successful</h4><div class="value" style="color: green;">' + data.successful + '</div></div>' +
+        '<div class="stat-box"><h4>Failed</h4><div class="value" style="color: red;">' + data.failed + '</div></div>' +
+        '<div class="stat-box"><h4>Duplicates</h4><div class="value" style="color: orange;">' + data.duplicates + '</div></div>' +
+        '</div>';
+
+    if (data.predictions.length === 0) {
+        content.innerHTML = '<p style="color:#666; margin-top:20px;">No successful predictions to display.</p>';
+        return;
     }
 
-    // Single prediction form submission
-    document.getElementById('singleForm').addEventListener('submit', function (e) {
-        e.preventDefault();
+    // Get the first prediction to determine available fields
+    const firstPred = data.predictions[0];
+    
+    // Check if year and major exist at the root level or in features
+    const hasYear = firstPred.hasOwnProperty('year');
+    const hasMajor = firstPred.hasOwnProperty('major');
+    
+    // If not in root, check in features
+    const yearFromFeatures = !hasYear && firstPred.features ? firstPred.features.year : null;
+    const majorFromFeatures = !hasMajor && firstPred.features ? firstPred.features.major : null;
 
-        var formData = new FormData(this);
-        var data = {
-            // Personal Information Fields
-            'name': formData.get('name'), 
-            'year': parseInt(formData.get('year')), 
-            'major': formData.get('major'), 
-
-            // Personal Information (Features)
-            'marital_status': parseInt(formData.get('maritalStatus')),
-            'application_mode': parseInt(formData.get('applicationMode')),
-            'application_order': 1,
-            'course': parseInt(formData.get('course')),
-            'daytime_evening_attendance': 1,
-            'previous_qualification': 12,
-            'previous_qualification_grade': parseInt(formData.get('previousQualificationGrade')) * 2, 
-            'nationality': 11,
-            'mothers_qualification': parseInt(formData.get('mothersQualification')),
-            'fathers_qualification': parseInt(formData.get('fathersQualification')),
-            'mothers_occupation': parseInt(formData.get('mothersOccupation')),
-            'fathers_occupation': parseInt(formData.get('fathersOccupation')),
-            'admission_grade': parseInt(formData.get('previousQualificationGrade')) * 2, 
-            'displaced': parseInt(formData.get('displaced')),
-            'educational_special_needs': parseInt(formData.get('educationalSpecialNeeds')),
-            'debtor': parseInt(formData.get('debtor')),
-            'tuition_fees_up_to_date': parseInt(formData.get('tuitionFeesUpToDate')),
-            'gender': parseInt(formData.get('gender')),
-            'scholarship_holder': parseInt(formData.get('scholarshipHolder')),
-            'age_at_enrollment': parseInt(formData.get('ageAtEnrollment')),
-            'international': parseInt(formData.get('international')),
-            
-            // Semester 1
-            'curricular_units_1st_sem_credited': 0,
-            'curricular_units_1st_sem_enrolled': parseInt(formData.get('sem1Enrolled')),
-            'curricular_units_1st_sem_evaluations': parseInt(formData.get('sem1Enrolled')),
-            'curricular_units_1st_sem_approved': parseInt(formData.get('sem1Approved')),
-            'curricular_units_1st_sem_grade': parseFloat(formData.get('sem1Grade')),
-            'curricular_units_1st_sem_without_evaluations': 0,
-            
-            // Semester 2
-            'curricular_units_2nd_sem_credited': 0,
-            'curricular_units_2nd_sem_enrolled': parseInt(formData.get('sem2Enrolled')),
-            'curricular_units_2nd_sem_evaluations': parseInt(formData.get('sem2Enrolled')),
-            'curricular_units_2nd_sem_approved': parseInt(formData.get('sem2Approved')),
-            'curricular_units_2nd_sem_grade': parseFloat(formData.get('sem2Grade')),
-            'curricular_units_2nd_sem_without_evaluations': 0,
-            
-            // Economic indicators
-            'unemployment_rate': 17.10,
-            'inflation_rate': 25.8,
-            'gdp': 17.40
-        };
-
-        predictSingle(data);
-    });
-
-    // Predict single student - IMPROVED VERSION
-    function predictSingle(data) {
-        var loading = document.getElementById('singleLoading');
-        var results = document.getElementById('singleResults');
-        var alert = document.getElementById('singleAlert');
-
-        loading.classList.add('active');
-        results.classList.remove('active');
-        alert.classList.remove('active');
-
-        fetch(API_BASE_URL + '/predict-single', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(function (result) {
-                loading.classList.remove('active');
-                console.log('API Response:', result); // Debug log
-
-                // Handle different response structures
-                if (result.status === 200 || result.success) {
-                    // Try different possible response structures
-                    const responseData = result.data || result;
-                    displaySingleResult(responseData, data); // Pass original form data as fallback
-                    results.classList.add('active');
-                    showAlert('singleAlert', 'success', 'Prediction completed successfully!');
-                } else {
-                    showAlert('singleAlert', 'error', result.error || result.message || 'Prediction failed');
-                }
-            })
-            .catch(function (error) {
-                loading.classList.remove('active');
-                console.error('Prediction error:', error);
-                showAlert('singleAlert', 'error', 'Error: ' + error.message);
-            });
+    // Build table header
+    let headerHTML = '<tr>' +
+        '<th>Name</th>';
+    
+    // Add Year column if data exists
+    if (hasYear || yearFromFeatures) {
+        headerHTML += '<th>Year</th>';
     }
+    
+    // Add Major column if data exists  
+    if (hasMajor || majorFromFeatures) {
+        headerHTML += '<th>Major</th>';
+    }
+    
+    headerHTML += '<th>Predicted Score</th>' +
+        '<th>Details</th>' +
+        '</tr>';
 
-    // Display single prediction result - IMPROVED VERSION
-    function displaySingleResult(data, formData = null) {
-        var content = document.getElementById('singleResultContent');
+    // Build table body
+    let bodyHTML = '';
+    data.predictions.forEach(function (pred) {
+        // Get year and major from appropriate location
+        const year = pred.year || (pred.features ? pred.features.year : 'Unknown');
+        const major = pred.major || (pred.features ? pred.features.major : 'Unknown');
         
-        console.log('Displaying data:', data); // Debug log
+        // Robust Score Display
+        const predScore = pred.predicted_performance;
+        const displayScore = (!isNaN(parseFloat(predScore)) && isFinite(parseFloat(predScore)))
+            ? parseFloat(predScore).toFixed(2) + '%'
+            : predScore;
 
-        // Safely extract data with fallbacks
-        const name = data.name || (formData ? formData.name : 'Unknown Student');
-        const year = data.year || (formData ? formData.year : 'Unknown Year');
-        const major = data.major || (formData ? formData.major : 'Unknown Major');
+        let rowHTML = '<tr>' +
+            '<td>' + (pred.name || 'Unknown') + '</td>';
         
-        // Handle predicted performance - try multiple possible field names
-        const predictedPerformance = data.predicted_performance || data.predicted_class || data.prediction || data.score || 'N/A';
+        // Add Year cell if data exists
+        if (hasYear || yearFromFeatures) {
+            rowHTML += '<td>' + year + '</td>';
+        }
         
-        // Handle improvement plan - try multiple possible field names
-        const improvementPlan = data.improvement_plan || data.plan || data.recommendations || data.suggestions || 'No improvement plan available.';
-
-        let displayScore;
-        if (!isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
-            displayScore = parseFloat(predictedPerformance).toFixed(2) + '%';
-        } else {
-            displayScore = predictedPerformance;
+        // Add Major cell if data exists
+        if (hasMajor || majorFromFeatures) {
+            rowHTML += '<td>' + major + '</td>';
         }
-
-        // Use the Markdown Formatter for Improvement Plan
-        const formattedPlan = formatMarkdown(improvementPlan);
-
-        content.innerHTML = '<div class="result-card">' +
-            '<h3>Prediction Result for ' + name + ' (Year ' + year + ', ' + major + ')</h3>' +
-            '<p><strong>Predicted Performance Score:</strong></p>' +
-            '<div class="score-display">' + displayScore + '</div>' +
-            '<p><strong>Improvement Plan:</strong></p>' +
-            '<div style="line-height: 1.6;">' + formattedPlan + '</div>' +
-            '</div>';
-    }
-
-    // File upload handling
-    var fileUploadArea = document.getElementById('fileUploadArea');
-    var batchFile = document.getElementById('batchFile');
-
-    fileUploadArea.addEventListener('click', function () {
-        batchFile.click();
-    });
-    batchFile.addEventListener('change', function (e) {
-        if (this.files && this.files.length > 0) {
-            fileUploadArea.classList.add('file-selected');
-            fileUploadArea.querySelector('p').textContent = 'Selected file: ' + this.files[0].name;
-        }
-    });
-
-    fileUploadArea.addEventListener('dragover', function (e) {
-        e.preventDefault();
-        this.classList.add('dragover');
-    });
-
-    fileUploadArea.addEventListener('dragleave', function () {
-        this.classList.remove('dragover');
-    });
-
-    fileUploadArea.addEventListener('drop', function (e) {
-        e.preventDefault();
-        this.classList.remove('dragover');
-
-        const droppedFiles = e.dataTransfer.files;
-        if (droppedFiles.length > 0) {
-            batchFile.files = droppedFiles;
-            fileUploadArea.classList.add('file-selected');
-            fileUploadArea.querySelector('p').textContent = 'Selected file: ' + droppedFiles[0].name;
-        }
-    });
-
-    // Batch prediction form submission
-    document.getElementById('batchForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        const file = batchFile.files[0]; 
-        if (!file) {
-            showAlert('batchAlert', 'error', 'Please select or drop a file');
-            return;
-        }
-        predictBatch(file);
-    });
-
-    // Predict batch - IMPROVED VERSION
-    function predictBatch(file) {
-        var loading = document.getElementById('batchLoading');
-        var results = document.getElementById('batchResults');
-        var alert = document.getElementById('batchAlert');
-
-        loading.classList.add('active');
-        results.classList.remove('active');
-        alert.classList.remove('active');
-
-        var formData = new FormData();
-        formData.append('file', file);
-
-        fetch(API_BASE_URL + '/predict-batch', {
-            method: 'POST',
-            body: formData
-        })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(function (result) {
-                loading.classList.remove('active');
-                console.log('Batch API Response:', result); // Debug log
-
-                if (result.status === 200 || result.success) {
-                    const responseData = result.data || result;
-                    displayBatchResults(responseData);
-                    results.classList.add('active');
-                    showAlert('batchAlert', 'success', 'Batch processing completed!');
-                } else {
-                    showAlert('batchAlert', 'error', result.error || result.message || 'Batch processing failed');
-                }
-            })
-            .catch(function (error) {
-                loading.classList.remove('active');
-                console.error('Batch prediction error:', error);
-                showAlert('batchAlert', 'error', 'Error: ' + error.message);
-            });
-    }
-
-    // Display batch results - IMPROVED VERSION
-    function displayBatchResults(data) {
-        var summary = document.getElementById('batchSummary');
-        var content = document.getElementById('batchResultContent');
-
-        // Handle different data structures
-        const predictions = data.predictions || data.results || data.data || [];
-        const totalRecords = data.total_records || data.total || predictions.length;
-        const successful = data.successful || data.processed || predictions.length;
-        const failed = data.failed || data.errors_count || 0;
-        const duplicates = data.duplicates || 0;
-        const errors = data.errors || [];
-
-        // Summary stats
-        summary.innerHTML = '<div class="summary-stats">' +
-            '<div class="stat-box"><h4>Total Records</h4><div class="value">' + totalRecords + '</div></div>' +
-            '<div class="stat-box"><h4>Successful</h4><div class="value" style="color: green;">' + successful + '</div></div>' +
-            '<div class="stat-box"><h4>Failed</h4><div class="value" style="color: red;">' + failed + '</div></div>' +
-            '<div class="stat-box"><h4>Duplicates</h4><div class="value" style="color: orange;">' + duplicates + '</div></div>' +
-            '</div>';
-
-        if (predictions.length === 0) {
-            content.innerHTML = '<p style="color:#666; margin-top:20px;">No successful predictions to display.</p>';
-            return;
-        }
-
-        // Build table header
-        let headerHTML = '<tr>' +
-            '<th>Name</th>' +
-            '<th>Year</th>' +
-            '<th>Major</th>' +
-            '<th>Predicted Score</th>' +
-            '<th>Details</th>' +
+        
+        rowHTML += '<td><strong>' + displayScore + '</strong></td>' +
+            '<td><a href="#history" onclick="switchTab(\'history\'); setTimeout(() => { document.querySelector(\'#history-search\') && (document.querySelector(\'#history-search\').value=\'' + pred.name + '\'); loadHistory(); }, 100);">View Details</a></td>' +
             '</tr>';
 
-        // Build table body
-        let bodyHTML = '';
-        predictions.forEach(function (pred, index) {
-            // Safely extract data with fallbacks
-            const name = pred.name || `Student ${index + 1}`;
-            const year = pred.year || 'Unknown';
-            const major = pred.major || 'Unknown';
-            
-            // Handle predicted performance
-            const predScore = pred.predicted_performance || pred.predicted_class || pred.prediction || pred.score || 'N/A';
-            const displayScore = (!isNaN(parseFloat(predScore)) && isFinite(parseFloat(predScore)))
-                ? parseFloat(predScore).toFixed(2) + '%'
-                : predScore;
+        bodyHTML += rowHTML;
+    });
 
-            let rowHTML = '<tr>' +
-                '<td>' + name + '</td>' +
-                '<td>' + year + '</td>' +
-                '<td>' + major + '</td>' +
-                '<td><strong>' + displayScore + '</strong></td>' +
-                '<td><a href="#history" onclick="switchTab(\'history\'); loadHistory();">View Details</a></td>' +
-                '</tr>';
+    // Assemble table
+    var tableHTML = '<table class="results-table">' +
+        '<thead>' + headerHTML + '</thead>' +
+        '<tbody>' + bodyHTML + '</tbody>' +
+        '</table>';
 
-            bodyHTML += rowHTML;
+    // Display errors if any
+    if (data.failed > 0 && data.errors) {
+        tableHTML += '<div style="margin-top: 30px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 5px;">' +
+            '<h4 style="margin-top: 0;">Failed Records (' + data.failed + ')</h4>' +
+            '<ul style="margin-bottom: 0;">';
+        data.errors.forEach(err => {
+            tableHTML += '<li>Record ' + err.record_index + ' (' + err.name + '): ' + err.error + '</li>';
         });
+        tableHTML += '</ul></div>';
+    }
 
-        // Assemble table
-        var tableHTML = '<table class="results-table">' +
-            '<thead>' + headerHTML + '</thead>' +
-            '<tbody>' + bodyHTML + '</tbody>' +
-            '</table>';
+    content.innerHTML = tableHTML;
+}
 
-        // Display errors if any
-        if (failed > 0 && errors.length > 0) {
-            tableHTML += '<div style="margin-top: 30px; padding: 15px; background: #f8d7da; color: #721c24; border-radius: 5px;">' +
-                '<h4 style="margin-top: 0;">Failed Records (' + failed + ')</h4>' +
-                '<ul style="margin-bottom: 0;">';
-            errors.forEach(err => {
-                const errorMsg = err.error || err.message || 'Unknown error';
-                const recordIndex = err.record_index || err.index || 'Unknown';
-                const studentName = err.name || `Record ${recordIndex}`;
-                tableHTML += '<li>' + studentName + ': ' + errorMsg + '</li>';
-            });
-            tableHTML += '</ul></div>';
+        // Load history (Retained as is)
+        function loadHistory() {
+            var loading = document.getElementById('historyLoading');
+            var results = document.getElementById('historyResults');
+            var alert = document.getElementById('historyAlert');
+
+            loading.classList.add('active');
+            results.classList.remove('active');
+            alert.classList.remove('active');
+
+            fetch(API_BASE_URL + '/history?limit=50')
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (result) {
+                    loading.classList.remove('active');
+
+                    if (result.data && result.data.length > 0) {
+                        displayHistory(result.data);
+                        results.classList.add('active');
+                    } else {
+                        showAlert('historyAlert', 'info', 'No prediction history found');
+                    }
+                })
+                .catch(function (error) {
+                    loading.classList.remove('active');
+                    showAlert('historyAlert', 'error', 'Error: ' + error.message);
+                });
         }
 
-        content.innerHTML = tableHTML;
+        // Display history
+        // Display history - FIXED VERSION
+function displayHistory(data) {
+    var content = document.getElementById('historyContent');
+    
+    if (!data || data.length === 0) {
+        content.innerHTML = '<p style="color:#666; text-align:center; padding: 40px;">No prediction history found.</p>';
+        return;
     }
 
-    // Load history
-    function loadHistory() {
-        var loading = document.getElementById('historyLoading');
-        var results = document.getElementById('historyResults');
-        var alert = document.getElementById('historyAlert');
+    var tableHTML = '<table class="results-table"><thead><tr>' +
+        '<th>Name</th><th>Year</th><th>Major</th><th>Predicted Score</th><th>Date</th><th>Details</th>' +
+        '</tr></thead><tbody>';
 
-        loading.classList.add('active');
-        results.classList.remove('active');
-        alert.classList.remove('active');
+    data.forEach(function (record) {
+        var date = new Date(record.created_at).toLocaleDateString();
 
-        fetch(API_BASE_URL + '/history?limit=50')
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(function (result) {
-                loading.classList.remove('active');
+        // Get year and major with fallbacks
+        const year = record.year || 'Unknown';
+        const major = record.major || 'Unknown';
 
-                const historyData = result.data || result.records || result || [];
-                if (historyData.length > 0) {
-                    displayHistory(historyData);
-                    results.classList.add('active');
-                } else {
-                    showAlert('historyAlert', 'info', 'No prediction history found');
-                }
-            })
-            .catch(function (error) {
-                loading.classList.remove('active');
-                console.error('History load error:', error);
-                showAlert('historyAlert', 'error', 'Error: ' + error.message);
-            });
-    }
+        // Robust Score Display
+        const recordScore = record.predicted_performance;
+        const displayScore = (!isNaN(parseFloat(recordScore)) && isFinite(parseFloat(recordScore)))
+            ? parseFloat(recordScore).toFixed(2) + '%'
+            : recordScore;
 
-    // Display history - IMPROVED VERSION
-    function displayHistory(data) {
-        var content = document.getElementById('historyContent');
-        
-        if (!data || data.length === 0) {
-            content.innerHTML = '<p style="color:#666; text-align:center; padding: 40px;">No prediction history found.</p>';
-            return;
+        tableHTML += '<tr>' +
+            '<td>' + (record.name || 'Unknown') + '</td>' +
+            '<td>' + year + '</td>' +
+            '<td>' + major + '</td>' +
+            '<td><strong>' + displayScore + '</strong></td>' +
+            '<td>' + date + '</td>' +
+            // Fix the button onclick in displayHistory
+'<td><button onclick="viewStudentDetail(' + record.id + ')" class="btn-secondary" style="padding: 6px 12px; font-size: 0.9em;">View Details</button></td>' +
+            '</tr>';
+    });
+
+    tableHTML += '</tbody></table>';
+    content.innerHTML = tableHTML;
+}
+
+        // New function to handle viewing student details from history
+        function viewStudentDetail(studentId) {
+             fetch(API_BASE_URL + '/student/' + studentId)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        // Switch to single tab to display result (can reuse displaySingleResult)
+                        switchTab('single');
+                        
+                        // NOTE: You need a dedicated section/modal in the single tab 
+                        // to show a historical result without overwriting the form.
+                        // For now, let's just show it in the 'singleResults' div, 
+                        // but you should adjust the HTML to handle this better.
+                        displaySingleResult(result.data); 
+                        document.getElementById('singleResults').classList.add('active');
+                        document.getElementById('singleAlert').classList.remove('active');
+                        document.getElementById('singleForm').style.display = 'none'; // Hide the form temporarily
+                    } else {
+                        showAlert('historyAlert', 'error', 'Failed to load student details: ' + (result.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    showAlert('historyAlert', 'error', 'Network error loading details: ' + error.message);
+                });
         }
 
-        var tableHTML = '<table class="results-table"><thead><tr>' +
-            '<th>Name</th><th>Year</th><th>Major</th><th>Predicted Score</th><th>Date</th><th>Details</th>' +
-            '</tr></thead><tbody>';
-
-        data.forEach(function (record) {
-            const date = new Date(record.created_at || record.date || record.timestamp).toLocaleDateString();
-            const name = record.name || 'Unknown Student';
-            const year = record.year || 'Unknown';
-            const major = record.major || 'Unknown';
-            
-            const recordScore = record.predicted_performance || record.predicted_class || record.prediction || record.score || 'N/A';
-            const displayScore = (!isNaN(parseFloat(recordScore)) && isFinite(parseFloat(recordScore)))
-                ? parseFloat(recordScore).toFixed(2) + '%'
-                : recordScore;
-
-            const recordId = record.id || record.student_id || record._id || '';
-
-            tableHTML += '<tr>' +
-                '<td>' + name + '</td>' +
-                '<td>' + year + '</td>' +
-                '<td>' + major + '</td>' +
-                '<td><strong>' + displayScore + '</strong></td>' +
-                '<td>' + date + '</td>' +
-                '<td><button onclick="viewStudentDetail(\'' + recordId + '\')" class="btn-secondary" style="padding: 6px 12px; font-size: 0.9em;">View Details</button></td>' +
-                '</tr>';
-        });
-
-        tableHTML += '</tbody></table>';
-        content.innerHTML = tableHTML;
-    }
-
-    // View student detail - IMPROVED VERSION
-    function viewStudentDetail(studentId) {
-        if (!studentId) {
-            showAlert('historyAlert', 'error', 'No student ID provided');
-            return;
+        // Show alert (Retained as is)
+        function showAlert(elementId, type, message) {
+            var alert = document.getElementById(elementId);
+            alert.className = 'alert active ' + type;
+            alert.textContent = message;
         }
-
-        fetch(API_BASE_URL + '/student/' + studentId)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(result => {
-                console.log('Student detail response:', result); // Debug log
-                
-                const success = result.status === 'success' || result.success;
-                const studentData = result.data || result;
-                
-                if (success && studentData) {
-                    switchTab('single');
-                    displaySingleResult(studentData);
-                    document.getElementById('singleResults').classList.add('active');
-                    document.getElementById('singleAlert').classList.remove('active');
-                    document.getElementById('singleForm').style.display = 'none';
-                } else {
-                    showAlert('historyAlert', 'error', 'Failed to load student details: ' + (result.error || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Student detail error:', error);
-                showAlert('historyAlert', 'error', 'Network error loading details: ' + error.message);
-            });
-    }
-
-    // Show alert
-    function showAlert(elementId, type, message) {
-        var alert = document.getElementById(elementId);
-        alert.className = 'alert active ' + type;
-        alert.textContent = message;
-    }
-
-    // Add debug function to check API response
-    function debugAPI() {
-        console.log('Testing API connection...');
-        fetch(API_BASE_URL + '/test')
-            .then(response => response.json())
-            .then(data => console.log('API test response:', data))
-            .catch(error => console.error('API test error:', error));
-    }
-
 </script>
 </body>
 </html>
