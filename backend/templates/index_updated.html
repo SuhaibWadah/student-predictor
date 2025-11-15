@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f7f8fc 0%, #4184a3 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -69,7 +69,7 @@
 
         .tab-button.active {
             background: white;
-            color: #667eea;
+            color: #3a98b4;
         }
 
         .tab-content {
@@ -161,7 +161,7 @@
         button[type="submit"],
         .btn-primary {
             padding: 12px 30px;
-            background: #667eea;
+            background: #354696;
             color: white;
             border: none;
             border-radius: 5px;
@@ -175,7 +175,7 @@
 
         button[type="submit"]:hover,
         .btn-primary:hover {
-            background: #5568d3;
+            background: #38458a;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
@@ -215,7 +215,7 @@
 
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border-top: 4px solid #475594;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -279,14 +279,14 @@
 
         .result-card {
             background: #f9f9f9;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #3a4886;
             padding: 20px;
             margin-bottom: 20px;
             border-radius: 5px;
         }
 
         .result-card h3 {
-            color: #667eea;
+            color: #4759ad;
             margin-bottom: 10px;
         }
 
@@ -334,7 +334,7 @@
         }
 
         .file-upload-area {
-            border: 2px dashed #667eea;
+            border: 2px dashed #35458b;
             border-radius: 5px;
             padding: 40px;
             text-align: center;
@@ -345,12 +345,12 @@
 
         .file-upload-area:hover {
             background: #f0f0f0;
-            border-color: #5568d3;
+            border-color: #37417a;
         }
 
         .file-upload-area.dragover {
             background: #e8eef7;
-            border-color: #5568d3;
+            border-color: #2f3c8a;
         }
 
         .file-upload-area p {
@@ -373,7 +373,7 @@
             background: #f9f9f9;
             padding: 15px;
             border-radius: 5px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #66c5ea;
         }
 
         .stat-box h4 {
@@ -385,11 +385,11 @@
         .stat-box .value {
             font-size: 1.8em;
             font-weight: bold;
-            color: #667eea;
+            color: #4e8fcc;
         }
 
         .info-text {
-            color: #666;
+            color: #666666;
             font-size: 0.9em;
             margin-top: 5px;
         }
@@ -447,7 +447,7 @@
                 <div id="singleAlert" class="alert"></div>
 
                 <form id="singleForm">
-                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Personal Information</h3>
+                    <h3 style="color: #4056b6; margin-top: 20px; margin-bottom: 15px;">Personal Information</h3>
 
                     <label for="name">Student Name (Letters/Spaces Only):</label>
                     <input type="text" id="name" name="name" required pattern="[A-Za-z\s]+"
@@ -994,7 +994,6 @@
                 '<p><strong>Improvement Plan:</strong></p>' +
                 // Use a <div> for the formatted HTML content
                 '<div style="line-height: 1.6;">' + formattedPlan + '</div>' +
-                '<p style="margin-top: 15px;"><a href="' + API_BASE_URL + '/student/' + data.student_id + '/pdf" target="_blank" class="download-button">Download Plan as PDF</a></p>' +
                 '</div>';
         }
 
