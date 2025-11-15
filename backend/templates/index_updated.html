@@ -12,32 +12,11 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #4361ee;
-            --primary-dark: #3a56d4;
-            --secondary: #7209b7;
-            --accent: #4cc9f0;
-            --success: #4ade80;
-            --warning: #f59e0b;
-            --error: #ef4444;
-            --dark: #1e293b;
-            --light: #f8fafc;
-            --gray: #64748b;
-            --gradient: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
-            --gradient-light: linear-gradient(135deg, #4cc9f0 0%, #4361ee 100%);
-            --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.15);
-            --border-radius: 12px;
-            --border-radius-sm: 8px;
-        }
-
         body {
-            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            line-height: 1.6;
-            color: var(--dark);
         }
 
         .container {
@@ -49,118 +28,53 @@
             text-align: center;
             color: white;
             margin-bottom: 40px;
-            padding: 30px 0;
-            position: relative;
-        }
-
-        header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 4px;
-            background: var(--accent);
-            border-radius: 2px;
+            padding: 20px 0;
         }
 
         header h1 {
-            font-size: 3em;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-            font-weight: 300;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .ai-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            margin-top: 15px;
-            font-size: 0.9em;
-            backdrop-filter: blur(10px);
-        }
-
-        .ai-badge::before {
-            content: '🤖';
             font-size: 1.1em;
+            opacity: 0.9;
         }
 
         .tabs {
             display: flex;
-            gap: 8px;
-            margin-bottom: 40px;
+            gap: 10px;
+            margin-bottom: 30px;
             justify-content: center;
             flex-wrap: wrap;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px;
-            border-radius: var(--border-radius);
-            backdrop-filter: blur(10px);
         }
 
         .tab-button {
-            padding: 14px 32px;
+            padding: 12px 30px;
             border: none;
-            background: transparent;
+            background: rgba(255, 255, 255, 0.3);
             color: white;
             cursor: pointer;
-            border-radius: var(--border-radius-sm);
+            border-radius: 5px;
             font-size: 1em;
             font-weight: 600;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .tab-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--gradient-light);
-            transition: left 0.3s ease;
-            z-index: -1;
         }
 
         .tab-button:hover {
+            background: rgba(255, 255, 255, 0.5);
             transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
-        .tab-button:hover::before {
-            left: 0;
         }
 
         .tab-button.active {
             background: white;
-            color: var(--primary);
-            box-shadow: var(--shadow);
-        }
-
-        .tab-button.active::before {
-            display: none;
+            color: #667eea;
         }
 
         .tab-content {
             display: none;
-            animation: fadeIn 0.4s ease;
+            animation: fadeIn 0.3s ease;
         }
 
         .tab-content.active {
@@ -170,8 +84,9 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -180,51 +95,21 @@
 
         .card {
             background: white;
-            border-radius: var(--border-radius);
-            padding: 40px;
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: var(--gradient);
-        }
-
-        .card h2 {
-            color: var(--dark);
-            margin-bottom: 15px;
-            font-size: 1.8em;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card h2::before {
-            content: '📊';
-            font-size: 1.2em;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: 600;
-            color: var(--dark);
-            font-size: 0.95em;
+            color: #333;
         }
 
         input[type="text"],
@@ -233,13 +118,12 @@
         select,
         textarea {
             width: 100%;
-            padding: 14px;
-            border: 2px solid #e2e8f0;
-            border-radius: var(--border-radius-sm);
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
             font-size: 1em;
             font-family: inherit;
-            transition: all 0.3s ease;
-            background: white;
+            transition: border-color 0.3s ease;
         }
 
         input[type="text"]:focus,
@@ -248,114 +132,81 @@
         select:focus,
         textarea:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-            transform: translateY(-1px);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         textarea {
             resize: vertical;
-            min-height: 120px;
+            min-height: 100px;
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            gap: 20px;
         }
 
         .form-row.full {
             grid-template-columns: 1fr;
         }
 
-        .section-title {
-            color: var(--primary);
-            margin: 32px 0 20px 0;
-            font-size: 1.3em;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .section-title::before {
-            content: '🎯';
-            font-size: 1.1em;
-        }
-
         .button-group {
             display: flex;
-            gap: 15px;
-            margin-top: 40px;
+            gap: 10px;
+            margin-top: 30px;
             flex-wrap: wrap;
         }
 
         button[type="submit"],
         .btn-primary {
-            padding: 16px 32px;
-            background: var(--gradient);
+            padding: 12px 30px;
+            background: #667eea;
             color: white;
             border: none;
-            border-radius: var(--border-radius-sm);
+            border-radius: 5px;
             cursor: pointer;
             font-size: 1em;
             font-weight: 600;
             transition: all 0.3s ease;
             flex: 1;
-            min-width: 160px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        button[type="submit"]::before,
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s ease;
-        }
-
-        button[type="submit"]:hover::before,
-        .btn-primary:hover::before {
-            left: 100%;
+            min-width: 150px;
         }
 
         button[type="submit"]:hover,
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-hover);
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button[type="submit"]:disabled,
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .btn-secondary {
-            padding: 16px 32px;
-            background: #f1f5f9;
-            color: var(--dark);
-            border: 2px solid #e2e8f0;
-            border-radius: var(--border-radius-sm);
+            padding: 12px 30px;
+            background: #e0e0e0;
+            color: #333;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 1em;
             font-weight: 600;
             transition: all 0.3s ease;
-            flex: 1;
-            min-width: 160px;
         }
 
         .btn-secondary:hover {
-            background: #e2e8f0;
-            border-color: #cbd5e1;
-            transform: translateY(-2px);
+            background: #d0d0d0;
         }
 
         .loading {
             display: none;
             text-align: center;
-            padding: 40px;
+            padding: 20px;
         }
 
         .loading.active {
@@ -363,26 +214,30 @@
         }
 
         .spinner {
-            border: 4px solid #f1f5f9;
-            border-top: 4px solid var(--primary);
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 10px;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .alert {
-            padding: 20px;
-            border-radius: var(--border-radius-sm);
-            margin-bottom: 24px;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
             display: none;
-            border-left: 4px solid transparent;
         }
 
         .alert.active {
@@ -390,32 +245,32 @@
         }
 
         .alert.success {
-            background: #f0fdf4;
-            color: #166534;
-            border-left-color: var(--success);
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
 
         .alert.error {
-            background: #fef2f2;
-            color: #991b1b;
-            border-left-color: var(--error);
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
 
         .alert.warning {
-            background: #fffbeb;
-            color: #92400e;
-            border-left-color: var(--warning);
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
         }
 
         .alert.info {
-            background: #f0f9ff;
-            color: #0c4a6e;
-            border-left-color: var(--accent);
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
         }
 
         .results {
             display: none;
-            margin-top: 40px;
+            margin-top: 30px;
         }
 
         .results.active {
@@ -423,75 +278,55 @@
         }
 
         .result-card {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-left: 4px solid var(--primary);
-            padding: 30px;
-            margin-bottom: 24px;
-            border-radius: var(--border-radius-sm);
-            box-shadow: var(--shadow);
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
         }
 
         .result-card h3 {
-            color: var(--primary);
-            margin-bottom: 15px;
-            font-size: 1.4em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .result-card h3::before {
-            content: '🎓';
+            color: #667eea;
+            margin-bottom: 10px;
         }
 
         .result-card p {
-            margin-bottom: 12px;
-            line-height: 1.7;
+            margin-bottom: 8px;
+            line-height: 1.6;
         }
 
         .score-display {
-            font-size: 2.5em;
+            font-size: 2em;
             font-weight: bold;
-            color: var(--primary);
-            margin: 20px 0;
-            text-align: center;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #667eea;
+            margin: 15px 0;
         }
 
         .results-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 24px;
+            margin-top: 20px;
             overflow-x: auto;
-            box-shadow: var(--shadow);
-            border-radius: var(--border-radius-sm);
-            background: white;
         }
 
         .results-table thead {
-            background: var(--gradient);
+            background: #f0f0f0;
         }
 
         .results-table th,
         .results-table td {
-            padding: 16px;
+            padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e0e0e0;
         }
 
         .results-table th {
             font-weight: 600;
-            color: white;
-            font-size: 0.95em;
+            color: #333;
         }
 
         .results-table tbody tr:hover {
-            background: #f8fafc;
-            transform: scale(1.01);
-            transition: all 0.2s ease;
+            background: #f9f9f9;
         }
 
         .results-table tbody tr:nth-child(even) {
@@ -499,121 +334,69 @@
         }
 
         .file-upload-area {
-            border: 2px dashed var(--primary);
-            border-radius: var(--border-radius-sm);
-            padding: 50px;
+            border: 2px dashed #667eea;
+            border-radius: 5px;
+            padding: 40px;
             text-align: center;
-            background: #f8fafc;
+            background: #f9f9f9;
             cursor: pointer;
             transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .file-upload-area::before {
-            content: '📁';
-            font-size: 3em;
-            display: block;
-            margin-bottom: 15px;
-            opacity: 0.7;
         }
 
         .file-upload-area:hover {
-            background: #f1f5f9;
-            border-color: var(--primary-dark);
-            transform: translateY(-2px);
+            background: #f0f0f0;
+            border-color: #5568d3;
         }
 
         .file-upload-area.dragover {
-            background: #e0f2fe;
-            border-color: var(--accent);
+            background: #e8eef7;
+            border-color: #5568d3;
         }
 
         .file-upload-area p {
             margin: 0;
-            color: var(--gray);
+            color: #666;
         }
 
         .file-upload-area strong {
-            color: var(--primary);
+            color: #667eea;
         }
 
         .summary-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
         .stat-box {
-            background: white;
-            padding: 24px;
-            border-radius: var(--border-radius-sm);
-            border-left: 4px solid var(--primary);
-            box-shadow: var(--shadow);
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-
-        .stat-box:hover {
-            transform: translateY(-3px);
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
         }
 
         .stat-box h4 {
-            color: var(--gray);
+            color: #666;
             font-size: 0.9em;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin-bottom: 5px;
         }
 
         .stat-box .value {
-            font-size: 2.2em;
+            font-size: 1.8em;
             font-weight: bold;
-            color: var(--primary);
+            color: #667eea;
         }
 
         .info-text {
-            color: var(--gray);
+            color: #666;
             font-size: 0.9em;
-            margin-top: 8px;
-            font-style: italic;
-        }
-
-        .ai-feature {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--gradient-light);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-
-        .download-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--success);
-            color: white;
-            padding: 12px 24px;
-            border-radius: var(--border-radius-sm);
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .download-button:hover {
-            background: #22c55e;
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
+            margin-top: 5px;
         }
 
         @media (max-width: 768px) {
             header h1 {
-                font-size: 2.2em;
+                font-size: 1.8em;
             }
 
             .form-row {
@@ -625,8 +408,7 @@
             }
 
             button[type="submit"],
-            .btn-primary,
-            .btn-secondary {
+            .btn-primary {
                 width: 100%;
             }
 
@@ -636,49 +418,8 @@
 
             .results-table th,
             .results-table td {
-                padding: 12px 8px;
+                padding: 8px;
             }
-
-            .card {
-                padding: 24px;
-            }
-
-            .file-upload-area {
-                padding: 30px 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            header h1 {
-                font-size: 1.8em;
-            }
-
-            .tab-button {
-                padding: 12px 20px;
-                font-size: 0.9em;
-            }
-
-            .section-title {
-                font-size: 1.1em;
-            }
-        }
-
-        /* Modern scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-dark);
         }
     </style>
 </head>
@@ -686,79 +427,60 @@
 <body>
     <div class="container">
         <header>
-            <h1>EduPredict AI</h1>
-            <p>Advanced Machine Learning for Student Performance Analysis and Personalized Improvement Plans</p>
-            <div class="ai-badge">
-                Powered by Artificial Intelligence
-            </div>
+            <h1>🎓 Student Performance Predictor</h1>
+            <p>Predict student performance and generate personalized improvement plans</p>
         </header>
 
         <div class="tabs">
-            <button class="tab-button active" data-tab="single">
-                <span>🎯 Single Prediction</span>
-            </button>
-            <button class="tab-button" data-tab="batch">
-                <span>📊 Batch Analysis</span>
-            </button>
-            <button class="tab-button" data-tab="history">
-                <span>📈 History & Analytics</span>
-            </button>
+            <button class="tab-button active" data-tab="single">Single Prediction</button>
+            <button class="tab-button" data-tab="batch">Batch Prediction</button>
+            <button class="tab-button" data-tab="history">History</button>
         </div>
 
         <!-- Single Prediction Tab -->
         <div id="single" class="tab-content active">
             <div class="card">
-                <h2>Individual Student Analysis</h2>
-                <p style="color: var(--gray); margin-bottom: 25px; font-size: 1.1em;">
-                    Get AI-powered performance predictions and personalized improvement strategies for individual students.
-                </p>
+                <h2>Single Student Prediction</h2>
+                <p style="color: #666; margin-bottom: 20px;">Enter student information to get a performance prediction
+                    and personalized improvement plan.</p>
 
                 <div id="singleAlert" class="alert"></div>
 
                 <form id="singleForm">
-                    <div class="section-title">Personal Information</div>
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Personal Information</h3>
 
-                    <div class="form-group">
-                        <label for="name">Student Name</label>
-                        <input type="text" id="name" name="name" required pattern="[A-Za-z\s]+"
-                            title="Name must contain only letters and spaces." placeholder="Enter student full name">
-                    </div>
+                    <label for="name">Student Name (Letters/Spaces Only):</label>
+                    <input type="text" id="name" name="name" required pattern="[A-Za-z\s]+"
+                        title="Name must contain only letters and spaces.">
+
+                    <label for="year">Study Year:</label>
+                    <select id="year" name="year" required>
+                        <option value="" disabled selected>Select Year</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+
+                    <label for="major">Major:</label>
+                    <select id="major" name="major" required>
+                        <option value="" disabled selected>Select Major</option>
+                        <option value="IT">IT</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="AI & Data Science">AI & Data Science</option>
+                        <option value="Cyber Security">Cyber Security</option>
+                        <option value="Civil Engineering">Civil Engineering</option>
+                        <option value="Fuel & Gas Engineering">Fuel & Gas Engineering</option>
+                        <option value="Interior Desing">Interior Design</option>
+                        <option value="Multimeida">Multimedia</option>
+                        <option value="International Business Management">International Business Management</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Accounting">Accounting</option>
+                    </select>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="year">Academic Year</label>
-                            <select id="year" name="year" required>
-                                <option value="" disabled selected>Select Year</option>
-                                <option value="1">First Year</option>
-                                <option value="2">Second Year</option>
-                                <option value="3">Third Year</option>
-                                <option value="4">Fourth Year</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="major">Field of Study</label>
-                            <select id="major" name="major" required>
-                                <option value="" disabled selected>Select Major</option>
-                                <option value="IT">Information Technology</option>
-                                <option value="Computer Science">Computer Science</option>
-                                <option value="AI & Data Science">AI & Data Science</option>
-                                <option value="Cyber Security">Cyber Security</option>
-                                <option value="Civil Engineering">Civil Engineering</option>
-                                <option value="Fuel & Gas Engineering">Fuel & Gas Engineering</option>
-                                <option value="Interior Design">Interior Design</option>
-                                <option value="Multimedia">Multimedia</option>
-                                <option value="International Business Management">International Business Management</option>
-                                <option value="Marketing">Marketing</option>
-                                <option value="Accounting">Accounting</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Rest of your form content remains the same but with updated styling -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="maritalStatus">Marital Status</label>
+                            <label for="maritalStatus">Marital Status *</label>
                             <select id="maritalStatus" name="maritalStatus" required>
                                 <option value="">Select marital status</option>
                                 <option value="1">Single</option>
@@ -769,7 +491,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="gender">Gender</label>
+                            <label for="gender">Gender *</label>
                             <select id="gender" name="gender" required>
                                 <option value="">Select gender</option>
                                 <option value="1">Male</option>
@@ -778,23 +500,223 @@
                         </div>
                     </div>
 
-                    <!-- Continue with the rest of your form sections... -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ageAtEnrollment">Age at Enrollment *</label>
+                            <input type="number" id="ageAtEnrollment" name="ageAtEnrollment" min="18" max="60" required
+                                placeholder="e.g., 20">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="applicationMode">Application Mode *</label>
+                            <select id="applicationMode" name="applicationMode" required>
+                                <option value="">Select application mode</option>
+                                <option value="1">1st phase - general contingent (Yemeni high school graduate)</option>
+                                <option value="15">International student (bachelor)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="international">International Student *</label>
+                        <select id="international" name="international" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <!-- Academic Information Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Academic Information</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="course">Course *</label>
+                            <select id="course" name="course" required>
+                                <option value="">Select course</option>
+                                <option value="33">Engineering</option>
+                                <option value="171">Multimedia</option>
+                                <option value="8014">Business Management</option>
+                                <option value="9119">IT & Computer Science</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="previousQualificationGrade">Previous Qualification Grade (0-100) *</label>
+                            <input type="number" id="previousQualificationGrade" name="previousQualificationGrade"
+                                min="0" max="100" required placeholder="e.g., 85">
+                            <p class="info-text">Your grade will be converted to the model's scale (0-200)</p>
+                        </div>
+                    </div>
+
+                    <!-- Family Background Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Family Background</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mothersQualification">Mother's Qualification *</label>
+                            <select id="mothersQualification" name="mothersQualification" required>
+                                <option value="">Select qualification</option>
+                                <option value="35">Uneducated</option>
+                                <option value="26">Primary School</option>
+                                <option value="14">Secondary School</option>
+                                <option value="1">High School</option>
+                                <option value="2">Bachelor</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mothersOccupation">Mother's Occupation *</label>
+                            <select id="mothersOccupation" name="mothersOccupation" required>
+                                <option value="">Select occupation</option>
+                                <option value="0">Student</option>
+                                <option value="1">Government Employee</option>
+                                <option value="4">Office Worker</option>
+                                <option value="123">Teacher</option>
+                                <option value="122">Health</option>
+                                <option value="151">Sales</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fathersQualification">Father's Qualification *</label>
+                            <select id="fathersQualification" name="fathersQualification" required>
+                                <option value="">Select qualification</option>
+                                <option value="35">Uneducated</option>
+                                <option value="26">Primary School</option>
+                                <option value="14">Secondary School</option>
+                                <option value="1">High School</option>
+                                <option value="2">Bachelor</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fathersOccupation">Father's Occupation *</label>
+                            <select id="fathersOccupation" name="fathersOccupation" required>
+                                <option value="">Select occupation</option>
+                                <option value="0">Student</option>
+                                <option value="1">Government Employee</option>
+                                <option value="4">Office Worker</option>
+                                <option value="123">Teacher</option>
+                                <option value="122">Health</option>
+                                <option value="151">Sales</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Financial & Status Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Financial & Status</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="displaced">Displaced *</label>
+                            <select id="displaced" name="displaced" required>
+                                <option value="">Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="educationalSpecialNeeds">Educational Special Needs *</label>
+                            <select id="educationalSpecialNeeds" name="educationalSpecialNeeds" required>
+                                <option value="">Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="debtor">Debtor *</label>
+                            <select id="debtor" name="debtor" required>
+                                <option value="">Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tuitionFeesUpToDate">Tuition Fees Up to Date *</label>
+                            <select id="tuitionFeesUpToDate" name="tuitionFeesUpToDate" required>
+                                <option value="">Select</option>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="scholarshipHolder">Scholarship Holder *</label>
+                        <select id="scholarshipHolder" name="scholarshipHolder" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <!-- Semester 1 Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Semester 1 Performance</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sem1Enrolled">Number of Subjects Taken (4-7) *</label>
+                            <input type="number" id="sem1Enrolled" name="sem1Enrolled" min="4" max="7" required
+                                placeholder="e.g., 6">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sem1Approved">Number of Subjects Passed *</label>
+                            <input type="number" id="sem1Approved" name="sem1Approved" min="0" max="7" required
+                                placeholder="e.g., 5">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sem1Grade">GPA for Semester 1 *</label>
+                        <input type="number" id="sem1Grade" name="sem1Grade" min="0" max="4" step="0.1" required
+                            placeholder="e.g., 3.5">
+                    </div>
+
+                    <!-- Semester 2 Section -->
+                    <h3 style="color: #667eea; margin-top: 20px; margin-bottom: 15px;">Semester 2 Performance</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sem2Enrolled">Number of Subjects Taken (4-7) *</label>
+                            <input type="number" id="sem2Enrolled" name="sem2Enrolled" min="4" max="7" required
+                                placeholder="e.g., 6">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sem2Approved">Number of Subjects Passed *</label>
+                            <input type="number" id="sem2Approved" name="sem2Approved" min="0" max="7" required
+                                placeholder="e.g., 5">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sem2Grade">GPA for Semester 2 *</label>
+                        <input type="number" id="sem2Grade" name="sem2Grade" min="0" max="4" step="0.1" required
+                            placeholder="e.g., 3.5">
+                    </div>
 
                     <div class="button-group">
-                        <button type="submit" class="btn-primary">
-                            <span>🤖 Analyze Performance</span>
-                        </button>
+                        <button type="submit" class="btn-primary">Predict Performance</button>
                         <button type="reset" class="btn-secondary">Clear Form</button>
                     </div>
                 </form>
 
                 <div id="singleLoading" class="loading">
                     <div class="spinner"></div>
-                    <p>AI is analyzing student data...</p>
+                    <p>Processing prediction...</p>
                 </div>
 
                 <div id="singleResults" class="results">
-                    <h2>AI Analysis Results</h2>
+                    <h3>Prediction Results</h3>
                     <div id="singleResultContent"></div>
                 </div>
             </div>
@@ -803,42 +725,38 @@
         <!-- Batch Prediction Tab -->
         <div id="batch" class="tab-content">
             <div class="card">
-                <h2>Batch Student Analysis</h2>
-                <p style="color: var(--gray); margin-bottom: 25px; font-size: 1.1em;">
-                    Upload multiple student records for bulk AI-powered performance analysis and insights.
-                </p>
+                <h2>Batch Student Predictions</h2>
+                <p style="color: #666; margin-bottom: 20px;">Upload a CSV or Excel file with multiple students to
+                    process predictions in bulk.</p>
 
                 <div id="batchAlert" class="alert"></div>
 
                 <form id="batchForm">
                     <div class="form-group">
-                        <label>Upload Student Data File</label>
+                        <label>Upload File (CSV or Excel) *</label>
                         <div id="fileUploadArea" class="file-upload-area">
                             <input type="file" id="batchFile" name="file" accept=".csv,.xlsx,.xls"
                                 style="display: none;">
                             <p><strong>Click to select</strong> or drag and drop your file here</p>
                             <p style="font-size: 0.9em; margin-top: 10px;">Supported formats: CSV, XLSX, XLS</p>
-                            <p style="font-size: 0.85em; color: var(--gray); margin-top: 5px;">
-                                File should contain all required student information columns
-                            </p>
+                            <p style="font-size: 0.85em; color: #999; margin-top: 5px;">File should contain all the
+                                required columns</p>
                         </div>
                     </div>
 
                     <div class="button-group">
-                        <button type="submit" class="btn-primary">
-                            <span>🚀 Process Batch Analysis</span>
-                        </button>
+                        <button type="submit" class="btn-primary">Process Batch</button>
                         <button type="reset" class="btn-secondary">Clear</button>
                     </div>
                 </form>
 
                 <div id="batchLoading" class="loading">
                     <div class="spinner"></div>
-                    <p>AI is processing batch data...</p>
+                    <p>Processing batch predictions...</p>
                 </div>
 
                 <div id="batchResults" class="results">
-                    <h2>Batch Analysis Results</h2>
+                    <h3>Batch Processing Results</h3>
                     <div id="batchSummary" class="summary-stats"></div>
                     <div id="batchResultContent"></div>
                 </div>
@@ -848,16 +766,14 @@
         <!-- History Tab -->
         <div id="history" class="tab-content">
             <div class="card">
-                <h2>Analytics & History</h2>
-                <p style="color: var(--gray); margin-bottom: 25px; font-size: 1.1em;">
-                    Review historical predictions, track performance trends, and access detailed analytics.
-                </p>
+                <h2>Prediction History</h2>
+                <p style="color: #666; margin-bottom: 20px;">View all previous predictions and improvement plans.</p>
 
                 <div id="historyAlert" class="alert"></div>
 
                 <div id="historyLoading" class="loading active">
                     <div class="spinner"></div>
-                    <p>Loading analytics data...</p>
+                    <p>Loading history...</p>
                 </div>
 
                 <div id="historyResults" class="results">
@@ -866,6 +782,7 @@
             </div>
         </div>
     </div>
+
    <script>
         // Configuration
         var API_BASE_URL = '/api';
