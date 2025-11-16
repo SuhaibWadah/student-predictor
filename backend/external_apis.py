@@ -162,7 +162,7 @@ class OpenRouterAPI:
                 {'role': 'user', 'content': prompt}
             ],
             'temperature': 0.7,
-            'max_tokens': 780 # Max tokens for the response
+            'max_tokens': 600 # Max tokens for the response
         }
 
         try:
