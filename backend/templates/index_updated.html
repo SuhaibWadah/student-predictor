@@ -933,65 +933,81 @@
 
         // Predict single student (Retained as is)
         function predictSingle(data) {
-            var loading = document.getElementById('singleLoading');
-            var results = document.getElementById('singleResults');
-            var alert = document.getElementById('singleAlert');
+    var loading = document.getElementById('singleLoading');
+    var results = document.getElementById('singleResults');
+    var alert = document.getElementById('singleAlert');
 
-            loading.classList.add('active');
-            results.classList.remove('active');
-            alert.classList.remove('active');
+    loading.classList.add('active');
+    results.classList.remove('active');
+    alert.classList.remove('active');
 
-            fetch(API_BASE_URL + '/predict-single', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-                .then(function (response) {
-                    return response.json().then(function (json) {
-                        return { status: response.status, data: json };
-                    });
-                })
-                .then(function (result) {
-                    loading.classList.remove('active');
-                    console.log("API Response Data:", result.data);
-                    if (result.status === 200) {
-                        displaySingleResult(result.data);
-                        results.classList.add('active');
-                        showAlert('singleAlert', 'success', 'Prediction completed successfully!');
-                    } else {
-                        showAlert('singleAlert', 'error', result.data.error || 'Prediction failed');
-                    }
-                })
-                .catch(function (error) {
-                    loading.classList.remove('active');
-                    showAlert('singleAlert', 'error', 'Error: ' + error.message);
-                });
-        }
+    fetch(API_BASE_URL + '/predict-single', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+        .then(function (response) {
+            return response.json().then(function (json) {
+                return { status: response.status, data: json };
+            });
+        })
+        .then(function (result) {
+            loading.classList.remove('active');
+
+            if (result.status === 200) {
+                // *** FIX 1: Access the nested 'data' object from the API response (result.data.data) ***
+                // *** Combine it with the original input data for a complete display result ***
+                const predictionData = result.data.data;
+                const completeData = {
+                    ...predictionData,
+                    name: data.name, // Use name from form input
+                    year: data.year, // Use year from form input
+                    major: data.major // Use major from form input
+                };
+
+                displaySingleResult(completeData);
+                results.classList.add('active');
+                showAlert('singleAlert', 'success', 'Prediction completed successfully!');
+            } else {
+                showAlert('singleAlert', 'error', result.data.error || 'Prediction failed');
+            }
+        })
+        .catch(function (error) {
+            loading.classList.remove('active');
+            showAlert('singleAlert', 'error', 'Error: ' + error.message);
+        });
+}
 
         // Display single prediction result (Retained as is)
         function displaySingleResult(data) {
     var content = document.getElementById('singleResultContent');
 
+    // Retrieve data directly from the combined object passed by predictSingle
     const studentName = data.name || data.student_name || "Unknown";
     const studentYear = data.year || data.study_year || "N/A";
+    const studentMajor = data.major || "N/A";
 
     const predictedPerformance = data.predicted_performance;
     let displayScore;
 
-    if (!isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
+    if (predictedPerformance && !isNaN(parseFloat(predictedPerformance)) && isFinite(parseFloat(predictedPerformance))) {
+        // If it's a number, format it as a percentage
         displayScore = parseFloat(predictedPerformance).toFixed(2) + '%';
     } else {
-        displayScore = predictedPerformance;
+        // If it's a string (like "Predicted class: Success"), display it as is
+        displayScore = predictedPerformance || 'N/A';
     }
 
+    // Use the correct key for the plan
     const formattedPlan = formatMarkdown(data.improvement_plan || "No improvement plan available.");
 
     content.innerHTML = `
         <div class="result-card">
-            <h3>Prediction Result for ${studentName} (Year ${studentYear})</h3>
-            <p><strong>Predicted Performance Score:</strong></p>
+            <h3>Prediction Result for ${studentName}</h3>
+            <p><strong>Year:</strong> ${studentYear} | <strong>Major:</strong> ${studentMajor}</p>
+            <p><strong>Predicted Performance Score/Class:</strong></p>
             <div class="score-display">${displayScore}</div>
             <p><strong>Improvement Plan:</strong></p>
             <div style="line-height: 1.6;">${formattedPlan}</div>
