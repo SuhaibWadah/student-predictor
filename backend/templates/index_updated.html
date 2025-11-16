@@ -959,6 +959,7 @@
             if (result.status === 200) {
                 // *** FIX 1: Access the nested 'data' object from the API response (result.data.data) ***
                 // *** Combine it with the original input data for a complete display result ***
+                console.log(result.data.data)
                 const predictionData = result.data.data;
                 const completeData = {
                     ...predictionData,
