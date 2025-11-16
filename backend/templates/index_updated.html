@@ -955,7 +955,7 @@
                 })
                 .then(function (result) {
                     loading.classList.remove('active');
-
+                    console.log("API Response Data:", result.data);
                     if (result.status === 200) {
                         displaySingleResult(result.data);
                         results.classList.add('active');
